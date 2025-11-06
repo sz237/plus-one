@@ -4,7 +4,7 @@ import { BrowserRouter } from "react-router-dom";
 import "bootstrap/dist/css/bootstrap.css";
 import "bootstrap/dist/js/bootstrap.bundle.min.js";
 import App from "./App.tsx";
-import "./styles/sidebar.css";
+import "./styles/Sidebar.css";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
