@@ -1,0 +1,90 @@
+.onboarding-bg {
+  min-height: 100vh;
+  background: linear-gradient(160deg, rgba(179, 163, 105, 0.15), rgba(255, 255, 255, 0.9));
+  padding-bottom: 4rem;
+}
+
+.onboarding-shell {
+  max-width: 760px;
+}
+
+.onboarding-badge {
+  background-color: rgba(179, 163, 105, 0.15);
+  color: var(--black, #0b0b0b);
+  padding: 0.4rem 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.onboarding-progress {
+  height: 6px;
+  background-color: rgba(0, 0, 0, 0.08);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.onboarding-progress .progress-bar {
+  background-color: var(--gold, #b3a369);
+}
+
+.onboarding-progress-value {
+  font-weight: 700;
+  font-size: 1.25rem;
+  color: var(--black, #0b0b0b);
+}
+
+.onboarding-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.interest-chip {
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  background-color: #fff;
+  border-radius: 999px;
+  padding: 0.4rem 1rem;
+  font-size: 0.95rem;
+  transition: all 0.2s ease;
+}
+
+.interest-chip:hover {
+  border-color: var(--black, #0b0b0b);
+  color: var(--black, #0b0b0b);
+}
+
+.interest-chip.active {
+  background-color: var(--gold, #b3a369);
+  border-color: var(--gold, #b3a369);
+  color: #000;
+}
+
+.photo-frame {
+  width: 160px;
+  height: 160px;
+  border-radius: 50%;
+  border: 6px solid #000;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #f2f2f2;
+}
+
+.photo-frame-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+@media (max-width: 576px) {
+  .onboarding-shell {
+    padding: 0 0.75rem;
+  }
+
+  .photo-frame {
+    width: 140px;
+    height: 140px;
+  }
+}
+

@@ -1,0 +1,22 @@
+# Normalize text files; let Git manage line endings
+* text=auto
+
+# Shell scripts & Unix executables -> LF
+*.sh text eol=lf
+mvnw text eol=lf
+
+# Windows batch/command scripts -> CRLF
+*.bat text eol=crlf
+*.cmd text eol=crlf
+mvnw.cmd text eol=crlf
+
+# Source & config -> LF
+*.java text eol=lf
+*.kt text eol=lf
+*.xml text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.properties text eol=lf
+*.json text eol=lf
+*.md text eol=lf
+*.gitignore text eol=lf

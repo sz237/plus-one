@@ -1,0 +1,22 @@
+# MongoDB credentials (personal)
+PlusOneBackend/src/main/resources/application.properties
+
+# Node modules
+plusone/node_modules/
+
+# Build outputs
+PlusOneBackend/target/
+plusone/dist/
+plusone/build/
+
+# IDE files
+.vscode/
+.idea/
+*.iml
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log

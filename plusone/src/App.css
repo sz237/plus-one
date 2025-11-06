@@ -1,0 +1,38 @@
+:root{
+  --gold: #B3A369;      /* tweak if you prefer a different gold */
+  --black: #0b0b0b;
+  --white: #ffffff;
+
+  /* Bootstrap variable overrides */
+  --bs-primary: var(--gold);
+  --bs-body-bg: var(--white);
+  --bs-body-color: var(--black);
+  --bs-link-color: var(--black);
+  --bs-focus-ring-color: color-mix(in srgb, var(--gold) 40%, transparent);
+}
+
+/* Keep the page airy and minimal */
+body { background: var(--white); color: var(--black); }
+
+/* Logo sizing */
+.landing-logo { width: 84px; height: 84px; }
+
+/* Make primary (gold) buttons readable on white */
+.btn-primary{
+  --bs-btn-color: #000; /* black text on gold */
+  --bs-btn-bg: var(--gold);
+  --bs-btn-border-color: var(--gold);
+  --bs-btn-hover-bg: #9E9158;        /* slightly darker gold */
+  --bs-btn-hover-border-color: #9E9158;
+  --bs-btn-active-bg: #8f844f;
+  --bs-btn-active-border-color: #8f844f;
+}
+
+/* Crisp outline-dark button */
+.btn-outline-dark{
+  --bs-btn-color: var(--black);
+  --bs-btn-border-color: var(--black);
+  --bs-btn-hover-color: var(--white);
+  --bs-btn-hover-bg: var(--black);
+  --bs-btn-hover-border-color: var(--black);
+}

@@ -1,0 +1,73 @@
+# --- Java / Maven ---
+target/
+# Ignore most of .mvn, but ensure Maven Wrapper is committed
+.mvn/
+!.mvn/wrapper/
+!.mvn/wrapper/maven-wrapper.jar
+!.mvn/wrapper/maven-wrapper.properties
+
+# If you had older wrapper downloader:
+# !.mvn/wrapper/MavenWrapperDownloader.java
+
+# Build metadata
+**/pom.xml.tag
+**/pom.xml.releaseBackup
+**/pom.xml.versionsBackup
+**/pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing.properties
+
+# --- Spring profiles / env ---
+*.env
+**/.env
+**/application-local.properties
+**/application-local.yml
+
+# --- Logs ---
+*.log
+logs/
+
+# --- IDEs ---
+### STS ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+
+### IntelliJ IDEA ###
+.idea/
+*.iws
+*.iml
+*.ipr
+
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+
+### VS Code ###
+.vscode/
+
+# --- Gradle (if any subprojects use it) ---
+build/
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+# --- Frontend / Node (if present) ---
+**/node_modules/
+**/.parcel-cache/
+**/.next/
+**/dist/
+**/build/          # frontend build output (kept separate from Java 'build/')
+
+# --- OS cruft ---
+.DS_Store
+Thumbs.db
+
