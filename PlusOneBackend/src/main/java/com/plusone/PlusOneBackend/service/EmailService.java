@@ -9,8 +9,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class EmailService {
 
-    @Autowired
-    private JavaMailSender mailSender;
+    private final JavaMailSender mailSender;
 
     @Value("${app.mail.from:sarahdzeng@gmail.com}")
     private String defaultFrom;
@@ -25,6 +24,7 @@ public class EmailService {
     public void sendConnectionRequestNotification(String recipientEmail, String recipientName, String requesterName, String message) {
         try {
             SimpleMailMessage email = new SimpleMailMessage();
+            email.setFrom(defaultFrom);
             email.setTo(recipientEmail);
             email.setSubject("There's been an update in PlusOne");
             email.setText(
