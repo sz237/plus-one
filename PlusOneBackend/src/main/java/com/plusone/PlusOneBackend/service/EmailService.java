@@ -12,7 +12,7 @@ public class EmailService {
     @Autowired
     private JavaMailSender mailSender;
 
-    @Value("${app.mail.from:no-reply@plusone.app}")
+    @Value("${app.mail.from:sarahdzeng@gmail.com}")
     private String defaultFrom;
 
     public EmailService(JavaMailSender mailSender) {
