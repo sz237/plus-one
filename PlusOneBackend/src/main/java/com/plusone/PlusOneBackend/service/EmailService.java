@@ -11,6 +11,13 @@ public class EmailService {
     @Autowired
     private JavaMailSender mailSender;
 
+     @Value("${app.mail.from:no-reply@plusone.app}")
+    private String defaultFrom;
+
+    public EmailService(JavaMailSender mailSender) {
+        this.mailSender = mailSender;
+    }
+
     /**
      * Send notification when someone sends a connection request
      */
@@ -41,6 +48,7 @@ public class EmailService {
     public void sendConnectionAcceptedNotification(String recipientEmail, String recipientName, String accepterName) {
         try {
             SimpleMailMessage email = new SimpleMailMessage();
+            email.setFrom(defaultFrom);
             email.setTo(recipientEmail);
             email.setSubject("There's been an update in PlusOne");
             email.setText(
