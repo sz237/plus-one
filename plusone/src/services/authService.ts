@@ -28,7 +28,7 @@ export const authService = {
    */
   signup: async (data: SignupRequest): Promise<AuthResponse> => {
     try {
-      const response = await api.post<AuthResponse>('/signup', data);
+      const response = await api.post<AuthResponse>('/auth/signup', data);
       return response.data;
     } catch (error: any) {
       if (error.response?.data) {
@@ -43,7 +43,7 @@ export const authService = {
    */
   login: async (data: LoginRequest): Promise<AuthResponse> => {
     try {
-      const response = await api.post<AuthResponse>('/login', data);
+      const response = await api.post<AuthResponse>('/auth/login', data);
       return response.data;
     } catch (error: any) {
       if (error.response?.data) {
@@ -58,7 +58,7 @@ export const authService = {
    */
   test: async (): Promise<string> => {
     try {
-      const response = await api.get('/test');
+      const response = await api.get('/auth/test');
       return response.data;
     } catch (error) {
       throw new Error('Failed to connect to backend');
@@ -70,5 +70,4 @@ export const authService = {
 export const isVanderbiltEmail = (email: string): boolean => {
   return email.toLowerCase().trim().endsWith('@vanderbilt.edu');
 };
-
 

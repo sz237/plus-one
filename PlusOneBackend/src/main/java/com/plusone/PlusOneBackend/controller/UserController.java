@@ -11,7 +11,6 @@ import java.util.List;
  * Handles user-related API requests.
  * Example: GET /api/users/search?q=fitness
  */
-@CrossOrigin(origins = "http://localhost:5173") // allow frontend requests from Vite dev server
 @RestController
 @RequestMapping("/api/users")
 

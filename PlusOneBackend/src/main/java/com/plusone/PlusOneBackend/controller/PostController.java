@@ -9,7 +9,6 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/posts")
-@CrossOrigin(origins = {"http://localhost:5173", "http://localhost:3000"}, allowCredentials = "true")
 public class PostController {
 
   private static final ZoneId ZONE_CHICAGO = ZoneId.of("America/Chicago");

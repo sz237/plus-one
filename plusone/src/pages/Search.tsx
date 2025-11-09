@@ -1,5 +1,6 @@
 import PageTemplate from "../components/PageTemplate";
 import { useState } from "react"; // store user enteried search query
+import { API_BASE_URL } from "../services/http"; // shared base URL from env/default
 
 // 1) A tiny type so TS knows what comes back from the server
 type User = {
@@ -12,10 +13,6 @@ type User = {
   profilePhotoUrl?: string;
 };
 
-// 2) Where your backend lives (change if needed)
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || "http://localhost:8080/api";
-
 export default function Search() {
   // what the user typed
   const [query, setQuery] = useState("");
@@ -25,7 +22,7 @@ export default function Search() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // 3) Runs when you submit the form (Enter or button click)
+  // 2) Runs when you submit the form (Enter or button click)
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault(); // don’t reload the page
     const q = query.trim();
@@ -36,7 +33,7 @@ export default function Search() {
     setResults([]);
 
     try {
-      // 4) Call your API: GET /api/users/search?q=...
+      // 3) Call your API: GET /api/users/search?q=...
       const res = await fetch(
         `${API_BASE_URL}/users/search?q=${encodeURIComponent(q)}`
       );

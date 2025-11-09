@@ -1,7 +1,5 @@
-import axios from 'axios';
 import type { ConnectionRequest } from "../types/connection";
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+import { api } from "./http";
 
 export interface UserProfile {
   userId: string;
@@ -37,37 +35,49 @@ export interface CreateConnectionRequest {
 export const connectionService = {
   // Get recent users for homepage
   async getRecentUsers(currentUserId: string): Promise<UserProfile[]> {
-    const response = await axios.get(`${API_BASE_URL}/recent-users?currentUserId=${currentUserId}`);
-    return response.data;
+    const { data } = await api.get<UserProfile[]>("/connections/recent-users", {
+      params: { currentUserId },
+    });
+    return data;
   },
 
   // Create a connection request
   async createConnectionRequest(fromUserId: string, request: CreateConnectionRequest): Promise<ConnectionRequest> {
-    const response = await axios.post(`${API_BASE_URL}/request?fromUserId=${fromUserId}`, request);
-    return response.data;
+    const { data } = await api.post<ConnectionRequest>("/connections/request", request, {
+      params: { fromUserId },
+    });
+    return data;
   },
 
   // Accept a connection request
   async acceptConnectionRequest(requestId: string, userId: string): Promise<ConnectionRequest> {
-    const response = await axios.post(`${API_BASE_URL}/accept/${requestId}?userId=${userId}`);
-    return response.data;
+    const { data } = await api.post<ConnectionRequest>(`/connections/accept/${requestId}`, null, {
+      params: { userId },
+    });
+    return data;
   },
 
   // Get connection status between two users
   async getConnectionStatus(fromUserId: string, toUserId: string): Promise<string> {
-    const response = await axios.get(`${API_BASE_URL}/status?fromUserId=${fromUserId}&toUserId=${toUserId}`);
-    return response.data;
+    const { data } = await api.get<string>("/connections/status", {
+      params: { fromUserId, toUserId },
+    });
+    return data;
   },
 
   // Get pending connection requests for a user
   async getPendingRequests(userId: string): Promise<ConnectionRequest[]> {
-    const response = await axios.get(`${API_BASE_URL}/pending-requests?userId=${userId}`);
-    return response.data;
+    const { data } = await api.get<ConnectionRequest[]>("/connections/pending-requests", {
+      params: { userId },
+    });
+    return data;
   },
 
   // Reject a connection request
   async rejectConnectionRequest(requestId: string, userId: string): Promise<ConnectionRequest> {
-    const response = await axios.post(`${API_BASE_URL}/reject/${requestId}?userId=${userId}`);
-    return response.data;
+    const { data } = await api.post<ConnectionRequest>(`/connections/reject/${requestId}`, null, {
+      params: { userId },
+    });
+    return data;
   }
 };
