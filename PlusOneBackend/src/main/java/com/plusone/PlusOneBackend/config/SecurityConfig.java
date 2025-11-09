@@ -25,27 +25,34 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-            .csrf(csrf -> csrf.disable()) // Disable CSRF for simplicity in development
-            .authorizeHttpRequests(auth -> auth
-                .anyRequest().permitAll() // Allow all requests for now (no authentication required yet)
-            );
-        
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .csrf(csrf -> csrf.disable()) // Disable CSRF for simplicity in development
+                .authorizeHttpRequests(auth -> auth
+                        .anyRequest().permitAll() // Allow all requests for now (no authentication required yet)
+                );
+
         return http.build();
     }
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList("http://localhost:5173", "http://localhost:3000")); // Vite default port & React default
+        configuration.setAllowedOrigins(
+                Arrays.asList("http://localhost:5173", "http://localhost:3000", "https://plus-one-delta.vercel.app")); // Vite
+                                                                                                                       // default
+                                                                                                                       // port
+                                                                                                                       // &
+                                                                                                                       // React
+                                                                                                                       // default
+                                                                                                                       // &
+                                                                                                                       // Vercel
+                                                                                                                       // domain
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
         configuration.setAllowCredentials(true);
-        
+
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;
     }
 }
-
-
