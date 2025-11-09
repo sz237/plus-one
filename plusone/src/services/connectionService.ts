@@ -1,7 +1,7 @@
 import axios from 'axios';
 import type { ConnectionRequest } from "../types/connection";
 
-const API_BASE_URL = 'http://localhost:8080/api/connections';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 export interface UserProfile {
   userId: string;
