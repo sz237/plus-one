@@ -1,14 +1,6 @@
-import axios from "axios";
+import { api } from "./http";
 import type { Post } from "../types/post";
 import type { ProfileResponse } from "../types/profile";
-
-const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080/api";
-
-const api = axios.create({
-  baseURL: API_BASE,
-  headers: { "Content-Type": "application/json" },
-  withCredentials: true,
-});
 
 export const postService = {
   async getProfile(userId: string): Promise<ProfileResponse> {

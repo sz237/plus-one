@@ -1,16 +1,4 @@
-import axios from 'axios';
-
-// Backend API base URL
-const API_BASE_URL = 'http://localhost:8080/api/auth';
-
-// Create axios instance with default config
-const api = axios.create({
-  baseURL: API_BASE_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-  withCredentials: true,
-});
+import { api } from "./http";
 
 // Type definitions
 export interface SignupRequest {
