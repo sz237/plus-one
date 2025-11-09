@@ -1,6 +1,5 @@
 package com.plusone.PlusOneBackend.service;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -21,21 +20,21 @@ public class EmailService {
     /**
      * Send notification when someone sends a connection request
      */
-    public void sendConnectionRequestNotification(String recipientEmail, String recipientName, String requesterName, String message) {
+    public void sendConnectionRequestNotification(String recipientEmail, String recipientName, String requesterName,
+            String message) {
         try {
             SimpleMailMessage email = new SimpleMailMessage();
             email.setFrom(defaultFrom);
             email.setTo(recipientEmail);
             email.setSubject("There's been an update in PlusOne");
             email.setText(
-                "Hi " + recipientName + ",\n\n" +
-                "You have received a new connection request from " + requesterName + " on PlusOne!\n\n" +
-                "Message: " + message + "\n\n" +
-                "Please log in to your PlusOne account to view and respond to this request.\n\n" +
-                "Best regards,\n" +
-                "The PlusOne Team"
-            );
-            
+                    "Hi " + recipientName + ",\n\n" +
+                            "You have received a new connection request from " + requesterName + " on PlusOne!\n\n" +
+                            "Message: " + message + "\n\n" +
+                            "Please log in to your PlusOne account to view and respond to this request.\n\n" +
+                            "Best regards,\n" +
+                            "The PlusOne Team");
+
             mailSender.send(email);
         } catch (Exception e) {
             // Log error but don't fail the request
@@ -53,14 +52,13 @@ public class EmailService {
             email.setTo(recipientEmail);
             email.setSubject("There's been an update in PlusOne");
             email.setText(
-                "Hi " + recipientName + ",\n\n" +
-                "Great news! " + accepterName + " has accepted your connection request on PlusOne!\n\n" +
-                "You are now connected and can start chatting and collaborating.\n\n" +
-                "Please log in to your PlusOne account to start connecting.\n\n" +
-                "Best regards,\n" +
-                "The PlusOne Team"
-            );
-            
+                    "Hi " + recipientName + ",\n\n" +
+                            "Great news! " + accepterName + " has accepted your connection request on PlusOne!\n\n" +
+                            "You are now connected and can start chatting and collaborating.\n\n" +
+                            "Please log in to your PlusOne account to start connecting.\n\n" +
+                            "Best regards,\n" +
+                            "The PlusOne Team");
+
             mailSender.send(email);
         } catch (Exception e) {
             // Log error but don't fail the request
