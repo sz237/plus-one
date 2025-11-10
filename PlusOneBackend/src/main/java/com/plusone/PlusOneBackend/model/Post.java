@@ -1,6 +1,7 @@
 package com.plusone.PlusOneBackend.model;
 
 import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.Transient;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.Instant;
@@ -23,6 +24,9 @@ public class Post {
   private LocalDate eventDate;
 
   private Date expiresAt;
+
+  @Transient
+  private AuthorSummary author;
 
   // getters/setters/constructors
   public Post() {
@@ -99,5 +103,52 @@ public class Post {
 
   public void setExpiresAt(Date expiresAt) {
     this.expiresAt = expiresAt;
+  }
+
+  public AuthorSummary getAuthor() {
+    return author;
+  }
+
+  public void setAuthor(AuthorSummary author) {
+    this.author = author;
+  }
+
+  public static class AuthorSummary {
+    private String id;
+    private String firstName;
+    private String lastName;
+
+    public AuthorSummary() {
+    }
+
+    public AuthorSummary(String id, String firstName, String lastName) {
+      this.id = id;
+      this.firstName = firstName;
+      this.lastName = lastName;
+    }
+
+    public String getId() {
+      return id;
+    }
+
+    public void setId(String id) {
+      this.id = id;
+    }
+
+    public String getFirstName() {
+      return firstName;
+    }
+
+    public void setFirstName(String firstName) {
+      this.firstName = firstName;
+    }
+
+    public String getLastName() {
+      return lastName;
+    }
+
+    public void setLastName(String lastName) {
+      this.lastName = lastName;
+    }
   }
 }
