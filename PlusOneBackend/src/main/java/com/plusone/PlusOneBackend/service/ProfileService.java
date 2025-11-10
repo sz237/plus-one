@@ -9,6 +9,8 @@ import com.plusone.PlusOneBackend.repository.ConnectionRepository;
 import com.plusone.PlusOneBackend.repository.ConnectionRequestRepository;
 import com.plusone.PlusOneBackend.repository.PostRepository;
 import com.plusone.PlusOneBackend.repository.UserRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -19,6 +21,8 @@ import java.util.Optional;
 
 @Service
 public class ProfileService {
+
+    private static final Logger logger = LoggerFactory.getLogger(ProfileService.class);
 
     private static final int DEFAULT_ONBOARDING_STEP = 1;
     private static final int MAX_ONBOARDING_STEP = 4;
@@ -151,9 +155,11 @@ public class ProfileService {
 
     private int getConnectionsCount(String userId) {
         try {
-            return connectionRepository.countConnectionsForUser(userId);
+            int count = connectionRepository.countConnectionsForUser(userId);
+            logger.debug("Connections count for user {}: {}", userId, count);
+            return count;
         } catch (Exception e) {
-            System.err.println("Error counting connections for user " + userId + ": " + e.getMessage());
+            logger.error("Error counting connections for user {}: {}", userId, e.getMessage(), e);
             return 0;
         }
     }
