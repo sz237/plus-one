@@ -31,21 +31,17 @@ public class ConnectionService {
 
     @Autowired
     private EmailService emailService;
+    
+    @Autowired
+    private MatchingService matchingService;
 
     /**
-     * Retrieves 3 users from recent signups; arbitrary for now
+     * Retrieves ranked users based on location and interests matching.
+     * Users are ranked by match score (location priority = 3, interests priority = 2).
      */
     public List<UserProfileDto> getRecentUsers(String currentUserId) {
-        List<User> users = userRepository.findAll()
-            .stream()
-            .filter(user -> !user.getId().equals(currentUserId)) // Exclude current user
-            .sorted((u1, u2) -> u2.getCreatedAt().compareTo(u1.getCreatedAt())) // (arbitrary decision)
-            .limit(3)
-            .collect(Collectors.toList());
-
-        return users.stream()
-            .map(this::convertToUserProfileDto)
-            .collect(Collectors.toList());
+        // Use matching service to get ranked users (default limit: 10)
+        return matchingService.getRankedUsers(currentUserId, 10);
     }
 
     /**
