@@ -155,8 +155,10 @@ public class ProfileService {
 
     private int getConnectionsCount(String userId) {
         try {
-            int count = connectionRepository.countConnectionsForUser(userId);
-            logger.debug("Connections count for user {}: {}", userId, count);
+            // Count ACCEPTED connection requests from connection_requests collection
+            // This is more reliable than counting from the connections collection
+            int count = connectionRequestRepository.countAcceptedConnectionsForUser(userId);
+            logger.debug("Connections count for user {} (from ACCEPTED requests): {}", userId, count);
             return count;
         } catch (Exception e) {
             logger.error("Error counting connections for user {}: {}", userId, e.getMessage(), e);

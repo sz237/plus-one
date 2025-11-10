@@ -24,4 +24,17 @@ public interface ConnectionRequestRepository extends MongoRepository<ConnectionR
     
     // Count pending requests for a user
     int countByToUserIdAndStatus(String toUserId, String status);
+    
+    // Count accepted connection requests where user is either sender or receiver
+    // This counts all ACCEPTED requests where the user is involved
+    default int countAcceptedConnectionsForUser(String userId) {
+        // Count where user is the sender and status is ACCEPTED
+        int sentAndAccepted = countByFromUserIdAndStatus(userId, "ACCEPTED");
+        // Count where user is the receiver and status is ACCEPTED
+        int receivedAndAccepted = countByToUserIdAndStatus(userId, "ACCEPTED");
+        return sentAndAccepted + receivedAndAccepted;
+    }
+    
+    // Helper method to count by fromUserId and status
+    int countByFromUserIdAndStatus(String fromUserId, String status);
 }
