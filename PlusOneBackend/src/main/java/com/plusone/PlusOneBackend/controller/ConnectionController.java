@@ -4,15 +4,22 @@ import com.plusone.PlusOneBackend.dto.ConnectionRequestDto;
 import com.plusone.PlusOneBackend.dto.CreateConnectionRequestDto;
 import com.plusone.PlusOneBackend.dto.UserProfileDto;
 import com.plusone.PlusOneBackend.service.ConnectionService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/connections")
 public class ConnectionController {
+
+    private static final Logger logger = LoggerFactory.getLogger(ConnectionController.class);
 
     @Autowired
     private ConnectionService connectionService;
@@ -34,14 +41,28 @@ public class ConnectionController {
      * Create a connection request
      */
     @PostMapping("/request")
-    public ResponseEntity<ConnectionRequestDto> createConnectionRequest(
+    public ResponseEntity<?> createConnectionRequest(
             @RequestParam String fromUserId,
             @RequestBody CreateConnectionRequestDto request) {
         try {
+            logger.info("Creating connection request: fromUserId={}, toUserId={}", 
+                    fromUserId, request.getToUserId());
             ConnectionRequestDto result = connectionService.createConnectionRequest(fromUserId, request);
+            logger.info("Successfully created connection request: fromUserId={}, toUserId={}", 
+                    fromUserId, request.getToUserId());
             return ResponseEntity.ok(result);
+        } catch (RuntimeException e) {
+            logger.error("Error creating connection request: fromUserId={}, toUserId={}, error={}", 
+                    fromUserId, request.getToUserId(), e.getMessage(), e);
+            Map<String, String> error = new HashMap<>();
+            error.put("error", e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         } catch (Exception e) {
-            return ResponseEntity.badRequest().build();
+            logger.error("Unexpected error creating connection request: fromUserId={}, toUserId={}", 
+                    fromUserId, request.getToUserId(), e);
+            Map<String, String> error = new HashMap<>();
+            error.put("error", "An unexpected error occurred: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
         }
     }
 
@@ -49,14 +70,26 @@ public class ConnectionController {
      * Accept a connection request
      */
     @PostMapping("/accept/{requestId}")
-    public ResponseEntity<ConnectionRequestDto> acceptConnectionRequest(
+    public ResponseEntity<?> acceptConnectionRequest(
             @PathVariable String requestId,
             @RequestParam String userId) {
         try {
+            logger.info("Accepting connection request: requestId={}, userId={}", requestId, userId);
             ConnectionRequestDto result = connectionService.acceptConnectionRequest(requestId, userId);
+            logger.info("Successfully accepted connection request: requestId={}", requestId);
             return ResponseEntity.ok(result);
+        } catch (RuntimeException e) {
+            logger.error("Error accepting connection request: requestId={}, userId={}, error={}", 
+                    requestId, userId, e.getMessage(), e);
+            Map<String, String> error = new HashMap<>();
+            error.put("error", e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         } catch (Exception e) {
-            return ResponseEntity.badRequest().build();
+            logger.error("Unexpected error accepting connection request: requestId={}, userId={}", 
+                    requestId, userId, e);
+            Map<String, String> error = new HashMap<>();
+            error.put("error", "An unexpected error occurred: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
         }
     }
 
@@ -92,14 +125,26 @@ public class ConnectionController {
      * Reject a connection request
      */
     @PostMapping("/reject/{requestId}")
-    public ResponseEntity<ConnectionRequestDto> rejectConnectionRequest(
+    public ResponseEntity<?> rejectConnectionRequest(
             @PathVariable String requestId,
             @RequestParam String userId) {
         try {
+            logger.info("Rejecting connection request: requestId={}, userId={}", requestId, userId);
             ConnectionRequestDto result = connectionService.rejectConnectionRequest(requestId, userId);
+            logger.info("Successfully rejected connection request: requestId={}", requestId);
             return ResponseEntity.ok(result);
+        } catch (RuntimeException e) {
+            logger.error("Error rejecting connection request: requestId={}, userId={}, error={}", 
+                    requestId, userId, e.getMessage(), e);
+            Map<String, String> error = new HashMap<>();
+            error.put("error", e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         } catch (Exception e) {
-            return ResponseEntity.badRequest().build();
+            logger.error("Unexpected error rejecting connection request: requestId={}, userId={}", 
+                    requestId, userId, e);
+            Map<String, String> error = new HashMap<>();
+            error.put("error", "An unexpected error occurred: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
         }
     }
 }

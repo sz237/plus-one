@@ -25,8 +25,13 @@ public class PlusOneBackendApplication {
     	String user = System.getenv("MAIL_USERNAME");
     	String pass = System.getenv("MAIL_PASSWORD");
 
-    	System.out.println("[mail] MAIL_HOST=" + host + " MAIL_PORT=" + port +
-                       " USER_PRESENT=" + (user != null) + " PASS_PRESENT=" + (pass != null));
+    	org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(PlusOneBackendApplication.class);
+    	
+    	logger.info("[mail] Configuration check - MAIL_HOST={}, MAIL_PORT={}, USER_PRESENT={}, PASS_PRESENT={}", 
+    			host != null ? host : "null", 
+    			port != null ? port : "null",
+    			user != null, 
+    			pass != null);
 
     	JavaMailSenderImpl s = new JavaMailSenderImpl();
     	if (host != null && !host.isBlank()) {
@@ -37,9 +42,10 @@ public class PlusOneBackendApplication {
 	      Properties p = s.getJavaMailProperties();
 	      p.put("mail.smtp.auth", "true");
 	      p.put("mail.smtp.starttls.enable", "true");
-	      System.out.println("[mail] JavaMailSender configured for host=" + host);
+	      logger.info("[mail] JavaMailSender successfully configured for host={}, port={}", host, s.getPort());
 	    } else {
-	      System.out.println("[mail] MAIL_HOST not set; creating placeholder sender (app will still start)");
+	      logger.warn("[mail] MAIL_HOST not set! Creating placeholder sender - EMAILS WILL NOT BE SENT. " +
+	      		"Set MAIL_HOST, MAIL_PORT, MAIL_USERNAME, and MAIL_PASSWORD environment variables to enable email.");
 	    }
     	return s;
   	}

@@ -195,7 +195,7 @@ export default function MyPage() {
                 <div className="text-muted small">
                   {posts.length} posts
                   <br />
-                  {profile?.connectionsCount ?? 0} connections
+                  <span className="fw-semibold">Connections: {profile?.connectionsCount ?? 0}</span>
                   <br />
                   {profile?.requestsCount ?? 0} requests
                 </div>
