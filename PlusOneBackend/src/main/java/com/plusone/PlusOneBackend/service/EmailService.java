@@ -1,5 +1,7 @@
 package com.plusone.PlusOneBackend.service;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -8,6 +10,8 @@ import org.springframework.stereotype.Service;
 @Service
 public class EmailService {
 
+    private static final Logger logger = LoggerFactory.getLogger(EmailService.class);
+
     private final JavaMailSender mailSender;
 
     @Value("${app.mail.from:sarahdzeng@gmail.com}")
@@ -15,6 +19,8 @@ public class EmailService {
 
     public EmailService(JavaMailSender mailSender) {
         this.mailSender = mailSender;
+        logger.info("EmailService initialized. Mail sender configured: {}", 
+                mailSender != null ? "yes" : "no");
     }
 
     /**
@@ -23,6 +29,7 @@ public class EmailService {
     public void sendConnectionRequestNotification(String recipientEmail, String recipientName, String requesterName,
             String message) {
         try {
+            logger.info("Attempting to send connection request notification to: {}", recipientEmail);
             SimpleMailMessage email = new SimpleMailMessage();
             email.setFrom(defaultFrom);
             email.setTo(recipientEmail);
@@ -36,9 +43,11 @@ public class EmailService {
                             "The PlusOne Team");
 
             mailSender.send(email);
+            logger.info("Successfully sent connection request notification to: {}", recipientEmail);
         } catch (Exception e) {
             // Log error but don't fail the request
-            System.err.println("Failed to send email notification: " + e.getMessage());
+            logger.error("Failed to send connection request notification to: {}. Error: {}", 
+                    recipientEmail, e.getMessage(), e);
         }
     }
 
@@ -47,6 +56,7 @@ public class EmailService {
      */
     public void sendConnectionAcceptedNotification(String recipientEmail, String recipientName, String accepterName) {
         try {
+            logger.info("Attempting to send connection accepted notification to: {}", recipientEmail);
             SimpleMailMessage email = new SimpleMailMessage();
             email.setFrom(defaultFrom);
             email.setTo(recipientEmail);
@@ -60,9 +70,11 @@ public class EmailService {
                             "The PlusOne Team");
 
             mailSender.send(email);
+            logger.info("Successfully sent connection accepted notification to: {}", recipientEmail);
         } catch (Exception e) {
             // Log error but don't fail the request
-            System.err.println("Failed to send email notification: " + e.getMessage());
+            logger.error("Failed to send connection accepted notification to: {}. Error: {}", 
+                    recipientEmail, e.getMessage(), e);
         }
     }
 }
