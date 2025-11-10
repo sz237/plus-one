@@ -24,12 +24,18 @@ public class UserController {
     @GetMapping("/search")
     public ResponseEntity<List<User>> searchUsers(
             @RequestParam("q") String query,
-            @RequestParam(value = "limit", defaultValue = "20") int limit) {
+            @RequestParam(value = "limit", defaultValue = "20") int limit,
+            @RequestParam(value = "mode", defaultValue = "interests") String mode) {
         if (query == null || query.trim().isEmpty()) {
             return ResponseEntity.ok(List.of()); // return empty list for empty query
         }
 
-        List<User> users = userSearchService.searchByInterest(query, limit);
+        String trimmed = query.trim();
+        int cappedLimit = Math.min(Math.max(limit, 1), 50);
+
+        List<User> users = "name".equalsIgnoreCase(mode)
+                ? userSearchService.searchByName(trimmed, cappedLimit)
+                : userSearchService.searchByInterest(trimmed, cappedLimit);
         return ResponseEntity.ok(users);
     }
 }
