@@ -81,7 +81,8 @@ export default function Search() {
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault(); // don’t reload the page
     const q = query.trim();
-    if (!q) return; // ignore empty searches
+    const searchingUsers = target === "users";
+    if (!q && searchingUsers) return; // require input only when searching users
 
     setLoading(true);
     setError("");
@@ -92,7 +93,7 @@ export default function Search() {
     try {
       // Call your API
       let url: string;
-      if (target === "users") {
+      if (searchingUsers) {
         url = `${API_BASE_URL}/users/search?mode=${userMode}&q=${encodeURIComponent(
           q
         )}&limit=24`;
