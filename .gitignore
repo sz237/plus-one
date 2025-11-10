@@ -2,6 +2,7 @@
 PlusOneBackend/src/main/resources/application.properties
 
 # Node modules
+node_modules/
 plusone/node_modules/
 
 # Build outputs
