@@ -18,6 +18,9 @@ export default function MyPage() {
     connectionsCount: number;
     requestsCount: number;
     postsCount: number;
+    profilePhoto?: {
+      url?: string | null;
+    };
   } | null>(null);
   const [posts, setPosts] = useState<Post[]>([]);
   const [connectionRequests, setConnectionRequests] = useState<ConnectionRequest[]>([]);
@@ -48,6 +51,7 @@ export default function MyPage() {
           connectionsCount: res.connectionsCount,
           requestsCount: res.requestsCount,
           postsCount: res.postsCount,
+          profilePhoto: res.profile?.profilePhoto,
         });
         setPosts(res.posts);
         
@@ -178,16 +182,30 @@ export default function MyPage() {
           <>
             {/* Profile block */}
             <div className="d-flex align-items-start gap-4 mb-4">
-              {/* avatar placeholder */}
+              {/* avatar */}
               <div
+                className="d-flex align-items-center justify-content-center"
                 style={{
                   width: 110,
                   height: 110,
                   borderRadius: "50%",
                   border: "6px solid #000",
                   background: "#efefef",
+                  overflow: "hidden",
                 }}
-              />
+              >
+                {profile?.profilePhoto?.url ? (
+                  <img 
+                    src={profile.profilePhoto.url} 
+                    alt={`${profile.firstName} ${profile.lastName}`}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  />
+                ) : (
+                  <span className="text-muted" style={{ fontSize: '36px' }}>
+                    {profile?.firstName?.charAt(0)}{profile?.lastName?.charAt(0)}
+                  </span>
+                )}
+              </div>
               <div>
                 <h2 className="h4 mb-1">
                   {profile?.firstName} {profile?.lastName}
