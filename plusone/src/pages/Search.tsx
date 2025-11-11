@@ -19,6 +19,7 @@ type Post = {
   id: string;
   title: string;
   content?: string;
+  description?: string;
   category:
     | "EVENTS"
     | "JOB_OPPORTUNITIES"
@@ -27,6 +28,7 @@ type Post = {
     | "OTHER";
   author?: { firstName?: string; lastName?: string; id?: string };
   coverImageUrl?: string;
+  imageUrl?: string;
   createdAt?: string;
 };
 
@@ -271,54 +273,60 @@ export default function Search() {
           ))}
 
         {target !== "users" &&
-          postResults.map((p) => (
-            <div key={p.id} className="col-12 col-md-6 col-lg-4">
-              <div
-                className="p-3 border border-2 h-100"
-                style={{ borderColor: "#000" }}
-              >
-                {p.coverImageUrl && (
-                  <img
-                    src={p.coverImageUrl}
-                    alt={p.title}
-                    style={{
-                      width: "100%",
-                      height: 160,
-                      objectFit: "cover",
-                      border: "2px solid #000",
-                    }}
-                  />
-                )}
-                <div className="mt-2">
-                  <div className="fw-bold">{p.title}</div>
-                  <div className="small text-muted">{p.category}</div>
-                  {p.author && (
-                    <div className="small">
-                      by {p.author.firstName} {p.author.lastName}
-                    </div>
-                  )}
-                  {p.createdAt && (
-                    <div className="small text-muted">
-                      {new Date(p.createdAt).toLocaleDateString()}
-                    </div>
-                  )}
-                  {p.content && (
-                    <p
-                      className="mt-2 mb-0"
+          postResults.map((p) => {
+            const image = p.coverImageUrl || p.imageUrl;
+            const blurb = p.content ?? p.description;
+            const authorName = [p.author?.firstName, p.author?.lastName]
+              .filter(Boolean)
+              .join(" ");
+            const authorLabel = authorName
+              ? `Posted by ${authorName}`
+              : "Posted by an unknown user";
+            return (
+              <div key={p.id} className="col-12 col-md-6 col-lg-4">
+                <div
+                  className="p-3 border border-2 h-100"
+                  style={{ borderColor: "#000" }}
+                >
+                  {image && (
+                    <img
+                      src={image}
+                      alt={p.title}
                       style={{
-                        display: "-webkit-box",
-                        WebkitLineClamp: 3,
-                        WebkitBoxOrient: "vertical",
-                        overflow: "hidden",
+                        width: "100%",
+                        height: 160,
+                        objectFit: "cover",
+                        border: "2px solid #000",
                       }}
-                    >
-                      {p.content}
-                    </p>
+                    />
                   )}
+                  <div className="mt-2">
+                    <div className="fw-bold">{p.title}</div>
+                    <div className="small text-muted">{p.category}</div>
+                  <div className="small">{authorLabel}</div>
+                    {p.createdAt && (
+                      <div className="small text-muted">
+                        {new Date(p.createdAt).toLocaleDateString()}
+                      </div>
+                    )}
+                    {blurb && (
+                      <p
+                        className="mt-2 mb-0"
+                        style={{
+                          display: "-webkit-box",
+                          WebkitLineClamp: 3,
+                          WebkitBoxOrient: "vertical",
+                          overflow: "hidden",
+                        }}
+                      >
+                        {blurb}
+                      </p>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
       </div>
     </PageTemplate>
   );

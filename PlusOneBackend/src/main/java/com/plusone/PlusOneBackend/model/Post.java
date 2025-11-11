@@ -1,5 +1,6 @@
 package com.plusone.PlusOneBackend.model;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.Transient;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -79,6 +80,19 @@ public class Post {
 
   public void setImageUrl(String imageUrl) {
     this.imageUrl = imageUrl;
+  }
+
+  /**
+   * Backwards-compatible alias so front end fields like "coverImageUrl" bind and render.
+   */
+  @JsonProperty("coverImageUrl")
+  public String getCoverImageUrl() {
+    return imageUrl;
+  }
+
+  @JsonProperty("coverImageUrl")
+  public void setCoverImageUrl(String coverImageUrl) {
+    this.imageUrl = coverImageUrl;
   }
 
   public Instant getCreatedAt() {

@@ -2,36 +2,37 @@ package com.plusone.PlusOneBackend.controller;
 
 import com.plusone.PlusOneBackend.model.Post;
 import com.plusone.PlusOneBackend.repository.PostRepository;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.query.Criteria;
-import org.springframework.data.mongodb.core.query.Query;
-import org.springframework.data.domain.Sort;
+import com.plusone.PlusOneBackend.service.PostAuthorService;
+import com.plusone.PlusOneBackend.service.PostSearchService;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.*;
 import java.util.Date;
 import java.util.List;
-import java.util.regex.Pattern;
 
 @RestController
 @RequestMapping("/api/posts")
 public class PostController {
 
   private static final ZoneId ZONE_CHICAGO = ZoneId.of("America/Chicago");
-  private static final int MAX_SEARCH_LIMIT = 100;
 
   private final PostRepository repo;
-  private final MongoTemplate mongoTemplate;
+  private final PostSearchService postSearchService;
+  private final PostAuthorService postAuthorService;
 
-  public PostController(PostRepository repo, MongoTemplate mongoTemplate) {
+  public PostController(PostRepository repo,
+                        PostSearchService postSearchService,
+                        PostAuthorService postAuthorService) {
     this.repo = repo;
-    this.mongoTemplate = mongoTemplate;
+    this.postSearchService = postSearchService;
+    this.postAuthorService = postAuthorService;
   }
 
   @GetMapping
   public List<Post> list(@RequestParam String userId) {
-    return repo.findByUserIdOrderByCreatedAtDesc(userId);
+    List<Post> posts = repo.findByUserIdOrderByCreatedAtDesc(userId);
+    postAuthorService.attachAuthors(posts);
+    return posts;
   }
 
   @PostMapping
@@ -41,14 +42,18 @@ public class PostController {
       p.setCreatedAt(Instant.now());
     }
     applyExpiry(p);
-    return repo.save(p);
+    Post saved = repo.save(p);
+    postAuthorService.attachAuthor(saved);
+    return saved;
   }
 
   @PutMapping("/{id}")
   public Post update(@PathVariable String id, @RequestBody Post p) {
     p.setId(id);
     applyExpiry(p);
-    return repo.save(p);
+    Post saved = repo.save(p);
+    postAuthorService.attachAuthor(saved);
+    return saved;
   }
 
   @DeleteMapping("/{id}")
@@ -61,35 +66,7 @@ public class PostController {
           @RequestParam("category") String category,
           @RequestParam(value = "q", required = false) String query,
           @RequestParam(value = "limit", defaultValue = "24") int limit) {
-    if (category == null || category.trim().isEmpty()) {
-      return List.of();
-    }
-
-    String normalizedCategory = category.trim();
-    int cappedLimit = Math.min(Math.max(limit, 1), MAX_SEARCH_LIMIT);
-    String trimmedQuery = query == null ? "" : query.trim();
-
-    if (trimmedQuery.isEmpty()) {
-      return repo.findByCategoryIgnoreCaseOrderByCreatedAtDesc(
-              normalizedCategory,
-              PageRequest.of(0, cappedLimit));
-    }
-
-    String safe = Pattern.quote(trimmedQuery);
-
-    Criteria categoryCriteria = Criteria.where("category")
-            .regex("^" + Pattern.quote(normalizedCategory) + "$", "i");
-
-    Criteria keywordCriteria = new Criteria().orOperator(
-            Criteria.where("title").regex(safe, "i"),
-            Criteria.where("description").regex(safe, "i")
-    );
-
-    Query mongoQuery = new Query(new Criteria().andOperator(categoryCriteria, keywordCriteria))
-            .with(Sort.by(Sort.Direction.DESC, "createdAt"))
-            .limit(cappedLimit);
-
-    return mongoTemplate.find(mongoQuery, Post.class);
+    return postSearchService.search(category, query, limit);
   }
 
   private void applyExpiry(Post p) {
