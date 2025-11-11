@@ -33,6 +33,17 @@ export default function MakePost() {
     }
   }, [state]);
 
+  // Handle escape key to cancel
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        navigate("/mypage");
+      }
+    };
+    window.addEventListener("keydown", handleEscape);
+    return () => window.removeEventListener("keydown", handleEscape);
+  }, [navigate]);
+
   const handleSelectCategory = (label: Category) => {
     setCategory(label);
     if(label !== "Events") setEventDate("");
@@ -167,7 +178,14 @@ export default function MakePost() {
             </div>
           </div>
 
-          <div className="d-flex justify-content-end">
+          <div className="d-flex justify-content-end gap-2">
+            <button 
+              type="button" 
+              className="btn btn-outline-secondary px-4" 
+              onClick={() => navigate("/mypage")}
+            >
+              Cancel
+            </button>
             <button type="submit" className="btn btn-dark px-4" style={{ color: "#F2E1C0", fontWeight: "bold" }}>
               {state?.post ? "Save" : "Submit"}
             </button>
