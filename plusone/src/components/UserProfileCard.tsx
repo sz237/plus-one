@@ -31,16 +31,22 @@ interface UserProfileCardProps {
   user: UserProfile;
   currentUserId: string;
   onConnectionUpdate: () => void;
+  isFriend?: boolean; // Optional prop to indicate this user is already a friend
 }
 
-export default function UserProfileCard({ user, currentUserId, onConnectionUpdate }: UserProfileCardProps) {
+export default function UserProfileCard({ user, currentUserId, onConnectionUpdate, isFriend = false }: UserProfileCardProps) {
   const [connectionStatus, setConnectionStatus] = useState<string>('CONNECT');
   const [showConnectPopup, setShowConnectPopup] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    loadConnectionStatus();
-  }, [user.userId, currentUserId]);
+    // If isFriend prop is true, set status directly without API call
+    if (isFriend) {
+      setConnectionStatus('FRIENDS');
+    } else {
+      loadConnectionStatus();
+    }
+  }, [user.userId, currentUserId, isFriend]);
 
   const loadConnectionStatus = async () => {
     try {

@@ -28,11 +28,43 @@ public class ConnectionController {
      * Get recent users for homepage display
      */
     @GetMapping("/recent-users")
-    public ResponseEntity<List<UserProfileDto>> getRecentUsers(@RequestParam String currentUserId) {
+    public ResponseEntity<List<UserProfileDto>> getRecentUsers(
+            @RequestParam String currentUserId,
+            @RequestParam(required = false, defaultValue = "10") Integer limit) {
         try {
-            List<UserProfileDto> users = connectionService.getRecentUsers(currentUserId);
+            List<UserProfileDto> users = connectionService.getRecentUsers(currentUserId, limit);
             return ResponseEntity.ok(users);
         } catch (Exception e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    /**
+     * Get suggested users (excluding friends) sorted by match algorithm
+     */
+    @GetMapping("/suggested-users")
+    public ResponseEntity<List<UserProfileDto>> getSuggestedUsers(
+            @RequestParam String currentUserId,
+            @RequestParam(required = false, defaultValue = "10000") Integer limit) {
+        try {
+            List<UserProfileDto> users = connectionService.getSuggestedUsers(currentUserId, limit);
+            return ResponseEntity.ok(users);
+        } catch (Exception e) {
+            logger.error("Error getting suggested users: {}", e.getMessage(), e);
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    /**
+     * Get all friends (connected users) for the current user
+     */
+    @GetMapping("/friends")
+    public ResponseEntity<List<UserProfileDto>> getFriends(@RequestParam String currentUserId) {
+        try {
+            List<UserProfileDto> friends = connectionService.getFriends(currentUserId);
+            return ResponseEntity.ok(friends);
+        } catch (Exception e) {
+            logger.error("Error getting friends: {}", e.getMessage(), e);
             return ResponseEntity.badRequest().build();
         }
     }

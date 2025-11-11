@@ -34,8 +34,26 @@ export interface CreateConnectionRequest {
 
 export const connectionService = {
   // Get recent users for homepage
-  async getRecentUsers(currentUserId: string): Promise<UserProfile[]> {
+  // Pass a large limit (10000) to get all users, or specify a custom limit
+  // Limits >= 10000 will return all users sorted by match score
+  async getRecentUsers(currentUserId: string, limit: number = 10000): Promise<UserProfile[]> {
     const { data } = await api.get<UserProfile[]>("/connections/recent-users", {
+      params: { currentUserId, limit },
+    });
+    return data;
+  },
+
+  // Get suggested users (excluding friends) sorted by match algorithm
+  async getSuggestedUsers(currentUserId: string, limit: number = 10000): Promise<UserProfile[]> {
+    const { data } = await api.get<UserProfile[]>("/connections/suggested-users", {
+      params: { currentUserId, limit },
+    });
+    return data;
+  },
+
+  // Get all friends (connected users) for the current user
+  async getFriends(currentUserId: string): Promise<UserProfile[]> {
+    const { data } = await api.get<UserProfile[]>("/connections/friends", {
       params: { currentUserId },
     });
     return data;

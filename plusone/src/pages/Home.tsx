@@ -30,7 +30,8 @@ interface UserProfile {
 
 function Home() {
   const [navOpen, setNavOpen] = useState(false);
-  const [users, setUsers] = useState<UserProfile[]>([]);
+  const [suggestedUsers, setSuggestedUsers] = useState<UserProfile[]>([]);
+  const [friends, setFriends] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -44,18 +45,46 @@ function Home() {
 
   useEffect(() => {
     if (user?.userId) {
-      loadRecentUsers();
+      loadUsers();
     }
   }, [user?.userId]);
 
-  const loadRecentUsers = async () => {
+  const loadUsers = async () => {
     try {
       setLoading(true);
-      const recentUsers = await connectionService.getRecentUsers(user.userId);
-      setUsers(recentUsers);
+      setError('');
+      
+      let suggestionsLoaded = false;
+      let friendsLoaded = false;
+      
+      // Load suggestions and friends separately so one failure doesn't block the other
+      try {
+        const suggestions = await connectionService.getSuggestedUsers(user.userId);
+        setSuggestedUsers(suggestions || []);
+        suggestionsLoaded = true;
+      } catch (err: any) {
+        console.error('Error loading suggested users:', err);
+        console.error('Error details:', err.response?.data || err.message);
+        setSuggestedUsers([]);
+      }
+      
+      try {
+        const friendsList = await connectionService.getFriends(user.userId);
+        setFriends(friendsList || []);
+        friendsLoaded = true;
+      } catch (err: any) {
+        console.error('Error loading friends:', err);
+        console.error('Error details:', err.response?.data || err.message);
+        setFriends([]);
+      }
+      
+      // Only show error if both failed
+      if (!suggestionsLoaded && !friendsLoaded) {
+        setError('Failed to load users. Please try refreshing the page.');
+      }
     } catch (err: any) {
+      console.error('Unexpected error loading users:', err);
       setError('Failed to load users');
-      console.error('Error loading users:', err);
     } finally {
       setLoading(false);
     }
@@ -63,7 +92,7 @@ function Home() {
 
   const handleConnectionUpdate = () => {
     // Refresh the users list to update connection statuses
-    loadRecentUsers();
+    loadUsers();
   };
 
   return (
@@ -105,15 +134,6 @@ function Home() {
           Hi {user?.firstName || "User"}, Welcome to PlusOne!
         </h1>
         
-        <div className="row">
-          <div className="col-12">
-            <h2 className="h5 mb-3">Connect with Other Vanderbilt Alumni</h2>
-            <p className="text-muted mb-4">
-              Discover and connect with fellow Vanderbilt graduates in your area.
-            </p>
-          </div>
-        </div>
-
         {loading ? (
           <div className="text-center py-5">
             <div className="spinner-border" role="status">
@@ -125,21 +145,45 @@ function Home() {
           <div className="alert alert-danger" role="alert">
             {error}
           </div>
-        ) : users.length === 0 ? (
-          <div className="text-center py-5">
-            <p className="text-muted">No users found. Be the first to join!</p>
-          </div>
         ) : (
-          <div className="row">
-            {users.map((userProfile) => (
-              <UserProfileCard
-                key={userProfile.userId}
-                user={userProfile}
-                currentUserId={user.userId}
-                onConnectionUpdate={handleConnectionUpdate}
-              />
-            ))}
-          </div>
+          <>
+            {/* Suggested Users Section */}
+            <div className="mb-5">
+              <h2 className="h5 mb-3">People you might want to connect with</h2>
+              {suggestedUsers.length === 0 ? (
+                <p className="text-muted">You are already friends with everyone on the platform.</p>
+              ) : (
+                <div className="row">
+                  {suggestedUsers.map((userProfile) => (
+                    <UserProfileCard
+                      key={userProfile.userId}
+                      user={userProfile}
+                      currentUserId={user.userId}
+                      onConnectionUpdate={handleConnectionUpdate}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Friends Section */}
+            {friends.length > 0 && (
+              <div className="mb-5">
+                <h2 className="h5 mb-3">Your Connections</h2>
+                <div className="row">
+                  {friends.map((userProfile) => (
+                    <UserProfileCard
+                      key={userProfile.userId}
+                      user={userProfile}
+                      currentUserId={user.userId}
+                      onConnectionUpdate={handleConnectionUpdate}
+                      isFriend={true}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+          </>
         )}
 
       </main>

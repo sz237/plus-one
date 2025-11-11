@@ -144,6 +144,7 @@ public class MatchingService {
     /**
      * Get ranked users for discovery feed based on location and interests matching.
      * Returns users sorted by match score (highest first).
+     * Includes all users (friends, pending, unconnected).
      * 
      * @param currentUserId The ID of the current user
      * @param limit Maximum number of users to return (default: 10)
@@ -162,24 +163,79 @@ public class MatchingService {
             .filter(user -> !user.getId().equals(currentUserId))
             .collect(Collectors.toList());
         
-        // Get existing connections for current user
+        // Calculate scores and filter
+        // Note: We include ALL users regardless of match score (even 0.0), sorted by score
+        // This includes connected users (friends) and users with pending requests
+        List<UserScore> scoredUsers = allUsers.stream()
+            .filter(user -> user.getOnboarding() != null && 
+                           user.getOnboarding().isCompleted()) // Only users who completed onboarding
+            .filter(user -> user.getProfile() != null) // Only users with profiles
+            .map(user -> new UserScore(user, calculateMatchScore(currentUser, user)))
+            .sorted((a, b) -> Double.compare(b.getScore(), a.getScore())) // Descending order (highest score first, 0.0 scores at end)
+            .collect(Collectors.toList());
+        
+        // Apply limit only if it's a reasonable number (not Integer.MAX_VALUE or very large)
+        // For large limits (>= 10000), return all users
+        if (limit > 0 && limit < 10000) {
+            return scoredUsers.stream()
+                .limit(limit)
+                .map(us -> convertToUserProfileDto(us.getUser()))
+                .collect(Collectors.toList());
+        } else {
+            // Return all users when limit is very large or MAX_VALUE
+            return scoredUsers.stream()
+                .map(us -> convertToUserProfileDto(us.getUser()))
+                .collect(Collectors.toList());
+        }
+        
+    }
+
+    /**
+     * Get ranked users for suggestions (excludes connected users/friends).
+     * Returns users sorted by match score (highest first).
+     * 
+     * @param currentUserId The ID of the current user
+     * @param limit Maximum number of users to return
+     * @return List of ranked users as UserProfileDto (excluding friends)
+     */
+    public List<UserProfileDto> getSuggestedUsers(String currentUserId, int limit) {
+        // Get current user
+        Optional<User> currentUserOpt = userRepository.findById(currentUserId);
+        if (currentUserOpt.isEmpty()) {
+            return Collections.emptyList();
+        }
+        User currentUser = currentUserOpt.get();
+        
+        // Get all users except current user
+        List<User> allUsers = userRepository.findAll().stream()
+            .filter(user -> !user.getId().equals(currentUserId))
+            .collect(Collectors.toList());
+        
+        // Get existing connections for current user (to exclude friends)
         Set<String> connectedUserIds = getConnectedUserIds(currentUserId);
         
-        // Calculate scores and filter
+        // Calculate scores and filter (exclude friends)
         List<UserScore> scoredUsers = allUsers.stream()
-            .filter(user -> !connectedUserIds.contains(user.getId()))
+            .filter(user -> !connectedUserIds.contains(user.getId())) // Exclude friends
             .filter(user -> user.getOnboarding() != null && 
                            user.getOnboarding().isCompleted()) // Only users who completed onboarding
             .filter(user -> user.getProfile() != null) // Only users with profiles
             .map(user -> new UserScore(user, calculateMatchScore(currentUser, user)))
             .sorted((a, b) -> Double.compare(b.getScore(), a.getScore())) // Descending order
-            .limit(limit > 0 ? limit : 10) // Default to 10 if limit is 0 or negative
             .collect(Collectors.toList());
         
-        // Convert to DTOs
-        return scoredUsers.stream()
-            .map(us -> convertToUserProfileDto(us.getUser()))
-            .collect(Collectors.toList());
+        // Apply limit only if it's a reasonable number
+        if (limit > 0 && limit < 10000) {
+            return scoredUsers.stream()
+                .limit(limit)
+                .map(us -> convertToUserProfileDto(us.getUser()))
+                .collect(Collectors.toList());
+        } else {
+            // Return all suggested users when limit is very large
+            return scoredUsers.stream()
+                .map(us -> convertToUserProfileDto(us.getUser()))
+                .collect(Collectors.toList());
+        }
     }
 
     /**

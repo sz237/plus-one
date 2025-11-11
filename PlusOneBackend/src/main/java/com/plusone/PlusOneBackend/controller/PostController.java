@@ -2,7 +2,10 @@ package com.plusone.PlusOneBackend.controller;
 
 import com.plusone.PlusOneBackend.model.Post;
 import com.plusone.PlusOneBackend.repository.PostRepository;
+import com.plusone.PlusOneBackend.service.PostAuthorService;
+import com.plusone.PlusOneBackend.service.PostSearchService;
 import org.springframework.web.bind.annotation.*;
+
 import java.time.*;
 import java.util.Date;
 import java.util.List;
@@ -14,14 +17,22 @@ public class PostController {
   private static final ZoneId ZONE_CHICAGO = ZoneId.of("America/Chicago");
 
   private final PostRepository repo;
+  private final PostSearchService postSearchService;
+  private final PostAuthorService postAuthorService;
 
-  public PostController(PostRepository repo) {
+  public PostController(PostRepository repo,
+                        PostSearchService postSearchService,
+                        PostAuthorService postAuthorService) {
     this.repo = repo;
+    this.postSearchService = postSearchService;
+    this.postAuthorService = postAuthorService;
   }
 
   @GetMapping
   public List<Post> list(@RequestParam String userId) {
-    return repo.findByUserIdOrderByCreatedAtDesc(userId);
+    List<Post> posts = repo.findByUserIdOrderByCreatedAtDesc(userId);
+    postAuthorService.attachAuthors(posts);
+    return posts;
   }
 
   @PostMapping
@@ -31,19 +42,31 @@ public class PostController {
       p.setCreatedAt(Instant.now());
     }
     applyExpiry(p);
-    return repo.save(p);
+    Post saved = repo.save(p);
+    postAuthorService.attachAuthor(saved);
+    return saved;
   }
 
   @PutMapping("/{id}")
   public Post update(@PathVariable String id, @RequestBody Post p) {
     p.setId(id);
     applyExpiry(p);
-    return repo.save(p);
+    Post saved = repo.save(p);
+    postAuthorService.attachAuthor(saved);
+    return saved;
   }
 
   @DeleteMapping("/{id}")
   public void delete(@PathVariable String id) {
     repo.deleteById(id);
+  }
+
+  @GetMapping("/search")
+  public List<Post> search(
+          @RequestParam("category") String category,
+          @RequestParam(value = "q", required = false) String query,
+          @RequestParam(value = "limit", defaultValue = "24") int limit) {
+    return postSearchService.search(category, query, limit);
   }
 
   private void applyExpiry(Post p) {

@@ -19,13 +19,25 @@ public class UserSearchService {
     public List<User> searchByInterest(String query, int limit) {
         String safe = Pattern.quote(query.trim()); // escape regex special chars
 
-        // Build query: look for users whose profile.interests array contains the search
-        // term
         Query mongoQuery = new Query(
-                Criteria.where("profile.interests").regex(safe, "i") // "i" = case-insensitive
-        ).limit(Math.min(limit, 50));
+                Criteria.where("profile.interests").regex(safe, "i")
+        )
+                .limit(Math.min(Math.max(limit, 1), 50));
 
-        // Run query and return matching users
+        return mongoTemplate.find(mongoQuery, User.class);
+    }
+
+    public List<User> searchByName(String query, int limit) {
+        String safe = Pattern.quote(query.trim());
+
+        Criteria criteria = new Criteria().orOperator(
+                Criteria.where("firstName").regex(safe, "i"),
+                Criteria.where("lastName").regex(safe, "i")
+        );
+
+        Query mongoQuery = new Query(criteria)
+                .limit(Math.min(Math.max(limit, 1), 50));
+
         return mongoTemplate.find(mongoQuery, User.class);
     }
 
