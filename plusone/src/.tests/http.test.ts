@@ -1,44 +1,96 @@
 /**
  * @file src/.tests/http.test.ts
- * NOTE: We do NOT import the real http.ts because 'import.meta' can't be parsed by Jest CJS.
- * Instead we verify equivalent behavior via a virtual module shim.
+ *
+ * Covers all branches in http.ts:
+ *  - Vite import.meta.env present
+ *  - process.env fallback
+ *  - precedence (import.meta.env over process.env)
+ *  - default "http://localhost:8080/api"
+ * Also verifies axios.create is called with expected options.
  */
-describe('http.ts axios instance (behavioral shim)', () => {
-  const SHIM_ID = '@/services/http';
 
-  const importShim = async (envValue?: string) => {
-    jest.resetModules();
-    delete (process.env as any).VITE_API_BASE_URL;
-    if (envValue !== undefined) {
-      (process.env as any).VITE_API_BASE_URL = envValue;
-    }
+import type { AxiosInstance } from 'axios';
 
-    jest.doMock(SHIM_ID, () => {
-      const axios = require('axios');
-      const API_BASE_URL =
-        (process.env as any).VITE_API_BASE_URL || 'http://localhost:8080/api';
-      const api = axios.create({
-        baseURL: API_BASE_URL,
-        withCredentials: true,
-        headers: { 'Content-Type': 'application/json' },
-      });
-      return { __esModule: true, api, API_BASE_URL };
-    }, { virtual: true });
+// Mock axios to capture create options
+const createSpy = jest.fn(() => ({ /* minimal AxiosInstance stub */ })) as unknown as jest.Mock<AxiosInstance>;
+jest.mock('axios', () => ({
+  __esModule: true,
+  default: { create: createSpy },
+  create: createSpy,
+}));
 
-    // eslint-disable-next-line @typescript-eslint/consistent-type-imports
-    const mod: typeof import('@/services/http') = await import(SHIM_ID);
-    return mod;
-  };
-
-  it('uses default baseURL when no env vars are set', async () => {
-    const { api, API_BASE_URL } = await importShim();
-    expect(API_BASE_URL).toBe('http://localhost:8080/api');
-    expect((api.defaults as any).baseURL).toBe('http://localhost:8080/api');
+/** Helper to (re)load the module with fresh globals */
+const loadHttpModule = () =>
+  jest.isolateModules(() => {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    return require('@/services/http') as typeof import('@/services/http');
   });
 
-  it('uses process.env.VITE_API_BASE_URL when provided', async () => {
-    const { api, API_BASE_URL } = await importShim('https://example.com/api');
-    expect(API_BASE_URL).toBe('https://example.com/api');
-    expect((api.defaults as any).baseURL).toBe('https://example.com/api');
+/** Clean both env sources before each scenario */
+const resetEnv = () => {
+  delete (globalThis as any).import;
+  delete (process as any).env?.VITE_API_BASE_URL;
+};
+
+describe('services/http.ts', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    resetEnv();
+  });
+
+  test('uses Vite import.meta.env.VITE_API_BASE_URL when present', () => {
+    // Define global "import.meta.env" like Vite does
+    (globalThis as any).import = { meta: { env: { VITE_API_BASE_URL: 'https://vite-env.example/api' } } };
+
+    const { API_BASE_URL, api } = loadHttpModule();
+
+    expect(API_BASE_URL).toBe('https://vite-env.example/api');
+    expect(createSpy).toHaveBeenCalledTimes(1);
+    expect(createSpy).toHaveBeenCalledWith({
+      baseURL: 'https://vite-env.example/api',
+      withCredentials: true,
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    // exported axios instance exists
+    expect(api).toBeTruthy();
+  });
+
+  test('falls back to process.env.VITE_API_BASE_URL when import.meta.env is missing', () => {
+    (process as any).env = { ...(process as any).env, VITE_API_BASE_URL: 'https://node-env.example/api' };
+
+    const { API_BASE_URL } = loadHttpModule();
+
+    expect(API_BASE_URL).toBe('https://node-env.example/api');
+    expect(createSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ baseURL: 'https://node-env.example/api', withCredentials: true })
+    );
+  });
+
+  test('import.meta.env takes precedence over process.env when both exist', () => {
+    (globalThis as any).import = { meta: { env: { VITE_API_BASE_URL: 'https://vite-wins.example/api' } } };
+    (process as any).env = { ...(process as any).env, VITE_API_BASE_URL: 'https://node-loses.example/api' };
+
+    const { API_BASE_URL } = loadHttpModule();
+
+    expect(API_BASE_URL).toBe('https://vite-wins.example/api');
+  });
+
+  test('falls back to default when neither env is set', () => {
+    const { API_BASE_URL } = loadHttpModule();
+
+    expect(API_BASE_URL).toBe('http://localhost:8080/api');
+    expect(createSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ baseURL: 'http://localhost:8080/api' })
+    );
+  });
+
+  test('sets JSON header & withCredentials=true on axios instance', () => {
+    (globalThis as any).import = { meta: { env: { VITE_API_BASE_URL: 'https://check-opts.example/api' } } };
+    loadHttpModule();
+
+    const opts = createSpy.mock.calls[0][0];
+    expect(opts.withCredentials).toBe(true);
+    expect(opts.headers).toEqual({ 'Content-Type': 'application/json' });
   });
 });
