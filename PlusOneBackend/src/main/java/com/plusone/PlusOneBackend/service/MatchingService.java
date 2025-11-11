@@ -173,7 +173,7 @@ public class MatchingService {
             .filter(user -> user.getProfile() != null) // Only users with profiles
             .map(user -> new UserScore(user, calculateMatchScore(currentUser, user)))
             .sorted((a, b) -> Double.compare(b.getScore(), a.getScore())) // Descending order
-            .limit(limit > 0 ? limit : 10) // Default to 10 if limit is 0 or negative
+            .limit(limit > 0 && limit < Integer.MAX_VALUE ? limit : Integer.MAX_VALUE) // Use limit if reasonable, otherwise return all
             .collect(Collectors.toList());
         
         // Convert to DTOs

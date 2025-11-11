@@ -38,10 +38,15 @@ public class ConnectionService {
     /**
      * Retrieves ranked users based on location and interests matching.
      * Users are ranked by match score (location priority = 3, interests priority = 2).
+     * 
+     * @param currentUserId The ID of the current user
+     * @param limit Maximum number of users to return (use a large number like 1000 for all users)
      */
-    public List<UserProfileDto> getRecentUsers(String currentUserId) {
-        // Use matching service to get ranked users (default limit: 10)
-        return matchingService.getRankedUsers(currentUserId, 10);
+    public List<UserProfileDto> getRecentUsers(String currentUserId, Integer limit) {
+        // Use matching service to get ranked users
+        // If limit is null or <= 0, use a very large number to get all users
+        int actualLimit = (limit != null && limit > 0) ? limit : Integer.MAX_VALUE;
+        return matchingService.getRankedUsers(currentUserId, actualLimit);
     }
 
     /**

@@ -34,9 +34,10 @@ export interface CreateConnectionRequest {
 
 export const connectionService = {
   // Get recent users for homepage
-  async getRecentUsers(currentUserId: string): Promise<UserProfile[]> {
+  // Pass a large limit (1000) to get all users, or specify a custom limit
+  async getRecentUsers(currentUserId: string, limit: number = 1000): Promise<UserProfile[]> {
     const { data } = await api.get<UserProfile[]>("/connections/recent-users", {
-      params: { currentUserId },
+      params: { currentUserId, limit },
     });
     return data;
   },

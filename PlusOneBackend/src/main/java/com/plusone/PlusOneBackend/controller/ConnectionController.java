@@ -28,9 +28,11 @@ public class ConnectionController {
      * Get recent users for homepage display
      */
     @GetMapping("/recent-users")
-    public ResponseEntity<List<UserProfileDto>> getRecentUsers(@RequestParam String currentUserId) {
+    public ResponseEntity<List<UserProfileDto>> getRecentUsers(
+            @RequestParam String currentUserId,
+            @RequestParam(required = false, defaultValue = "10") Integer limit) {
         try {
-            List<UserProfileDto> users = connectionService.getRecentUsers(currentUserId);
+            List<UserProfileDto> users = connectionService.getRecentUsers(currentUserId, limit);
             return ResponseEntity.ok(users);
         } catch (Exception e) {
             return ResponseEntity.badRequest().build();
