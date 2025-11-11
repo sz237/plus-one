@@ -13,7 +13,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -69,41 +68,22 @@ public class ConnectionService {
      * @param currentUserId The ID of the current user
      */
     public List<UserProfileDto> getFriends(String currentUserId) {
-        try {
-            // Get all connections for the user
-            List<Connection> connections = connectionRepository.findByUser1IdOrUser2Id(currentUserId, currentUserId);
-            
-            // If no connections, return empty list
-            if (connections == null || connections.isEmpty()) {
-                return new ArrayList<>();
-            }
-            
-            // Extract friend user IDs
-            Set<String> friendIds = connections.stream()
-                .map(conn -> conn.getUser1Id().equals(currentUserId) ? conn.getUser2Id() : conn.getUser1Id())
-                .filter(id -> id != null) // Filter out null IDs
-                .collect(Collectors.toSet());
-            
-            // If no valid friend IDs, return empty list
-            if (friendIds.isEmpty()) {
-                return new ArrayList<>();
-            }
-            
-            // Get user objects for friends
-            List<User> friends = userRepository.findAllById(friendIds);
-            
-            // Convert to DTOs and sort by creation date (arbitrary)
-            return friends.stream()
-                .filter(user -> user != null && user.getProfile() != null) // Filter out null users or users without profiles
-                .sorted((u1, u2) -> u2.getCreatedAt().compareTo(u1.getCreatedAt())) // Most recent first
-                .map(this::convertToUserProfileDto)
-                .collect(Collectors.toList());
-        } catch (Exception e) {
-            // Log error and return empty list instead of throwing
-            System.err.println("Error getting friends for user " + currentUserId + ": " + e.getMessage());
-            e.printStackTrace();
-            return new ArrayList<>();
-        }
+        // Get all connections for the user
+        List<Connection> connections = connectionRepository.findByUser1IdOrUser2Id(currentUserId, currentUserId);
+        
+        // Extract friend user IDs
+        Set<String> friendIds = connections.stream()
+            .map(conn -> conn.getUser1Id().equals(currentUserId) ? conn.getUser2Id() : conn.getUser1Id())
+            .collect(Collectors.toSet());
+        
+        // Get user objects for friends
+        List<User> friends = userRepository.findAllById(friendIds);
+        
+        // Convert to DTOs and sort by creation date (arbitrary)
+        return friends.stream()
+            .sorted((u1, u2) -> u2.getCreatedAt().compareTo(u1.getCreatedAt())) // Most recent first
+            .map(this::convertToUserProfileDto)
+            .collect(Collectors.toList());
     }
 
     /**

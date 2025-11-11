@@ -1,6 +1,8 @@
 package com.plusone.PlusOneBackend.model;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.Transient;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.Instant;
@@ -23,6 +25,9 @@ public class Post {
   private LocalDate eventDate;
 
   private Date expiresAt;
+
+  @Transient
+  private AuthorSummary author;
 
   // getters/setters/constructors
   public Post() {
@@ -77,6 +82,19 @@ public class Post {
     this.imageUrl = imageUrl;
   }
 
+  /**
+   * Backwards-compatible alias so front end fields like "coverImageUrl" bind and render.
+   */
+  @JsonProperty("coverImageUrl")
+  public String getCoverImageUrl() {
+    return imageUrl;
+  }
+
+  @JsonProperty("coverImageUrl")
+  public void setCoverImageUrl(String coverImageUrl) {
+    this.imageUrl = coverImageUrl;
+  }
+
   public Instant getCreatedAt() {
     return createdAt;
   }
@@ -99,5 +117,52 @@ public class Post {
 
   public void setExpiresAt(Date expiresAt) {
     this.expiresAt = expiresAt;
+  }
+
+  public AuthorSummary getAuthor() {
+    return author;
+  }
+
+  public void setAuthor(AuthorSummary author) {
+    this.author = author;
+  }
+
+  public static class AuthorSummary {
+    private String id;
+    private String firstName;
+    private String lastName;
+
+    public AuthorSummary() {
+    }
+
+    public AuthorSummary(String id, String firstName, String lastName) {
+      this.id = id;
+      this.firstName = firstName;
+      this.lastName = lastName;
+    }
+
+    public String getId() {
+      return id;
+    }
+
+    public void setId(String id) {
+      this.id = id;
+    }
+
+    public String getFirstName() {
+      return firstName;
+    }
+
+    public void setFirstName(String firstName) {
+      this.firstName = firstName;
+    }
+
+    public String getLastName() {
+      return lastName;
+    }
+
+    public void setLastName(String lastName) {
+      this.lastName = lastName;
+    }
   }
 }

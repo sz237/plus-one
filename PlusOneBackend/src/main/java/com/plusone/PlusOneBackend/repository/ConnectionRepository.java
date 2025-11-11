@@ -23,7 +23,11 @@ public interface ConnectionRepository extends MongoRepository<Connection, String
         return findByUser1IdAndUser2IdOrUser1IdAndUser2Id(userId1, userId2, userId1, userId2);
     }
     
-    // Count total connections for a user
-    @Query("{ $or: [ { user1Id: ?0 }, { user2Id: ?0 } ] }")
-    int countConnectionsForUser(String userId);
+    // Count total connections for a user (convenience method)
+    default int countConnectionsForUser(String userId) {
+        // Use the existing findByUser1IdOrUser2Id method and count results
+        // This is more reliable than custom count queries
+        List<Connection> connections = findByUser1IdOrUser2Id(userId, userId);
+        return connections != null ? connections.size() : 0;
+    }
 }
