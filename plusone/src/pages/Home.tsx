@@ -177,6 +177,7 @@ function Home() {
                       user={userProfile}
                       currentUserId={user.userId}
                       onConnectionUpdate={handleConnectionUpdate}
+                      isFriend={true}
                     />
                   ))}
                 </div>
