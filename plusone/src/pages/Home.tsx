@@ -51,11 +51,14 @@ function Home() {
   const loadRecentUsers = async () => {
     try {
       setLoading(true);
+      setError('');
       const recentUsers = await connectionService.getRecentUsers(user.userId);
-      setUsers(recentUsers);
+      setUsers(recentUsers || []);
     } catch (err: any) {
-      setError('Failed to load users');
+      setError('Failed to load users. Please try refreshing the page.');
       console.error('Error loading users:', err);
+      console.error('Error details:', err.response?.data || err.message);
+      setUsers([]);
     } finally {
       setLoading(false);
     }

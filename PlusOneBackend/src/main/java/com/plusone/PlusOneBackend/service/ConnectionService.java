@@ -13,8 +13,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -31,21 +33,77 @@ public class ConnectionService {
 
     @Autowired
     private EmailService emailService;
+    
+    @Autowired
+    private MatchingService matchingService;
 
     /**
-     * Retrieves 3 users from recent signups; arbitrary for now
+     * Retrieves ranked users based on location and interests matching.
+     * Users are ranked by match score (location priority = 3, interests priority = 2).
+     * 
+     * @param currentUserId The ID of the current user
+     * @param limit Maximum number of users to return (use a large number like 1000 for all users)
      */
-    public List<UserProfileDto> getRecentUsers(String currentUserId) {
-        List<User> users = userRepository.findAll()
-            .stream()
-            .filter(user -> !user.getId().equals(currentUserId)) // Exclude current user
-            .sorted((u1, u2) -> u2.getCreatedAt().compareTo(u1.getCreatedAt())) // (arbitrary decision)
-            .limit(3)
-            .collect(Collectors.toList());
+    public List<UserProfileDto> getRecentUsers(String currentUserId, Integer limit) {
+        // Use matching service to get ranked users
+        // If limit is null or <= 0, use a very large number to get all users
+        int actualLimit = (limit != null && limit > 0) ? limit : Integer.MAX_VALUE;
+        return matchingService.getRankedUsers(currentUserId, actualLimit);
+    }
 
-        return users.stream()
-            .map(this::convertToUserProfileDto)
-            .collect(Collectors.toList());
+    /**
+     * Get suggested users (excluding friends) sorted by match algorithm.
+     * 
+     * @param currentUserId The ID of the current user
+     * @param limit Maximum number of users to return
+     */
+    public List<UserProfileDto> getSuggestedUsers(String currentUserId, Integer limit) {
+        int actualLimit = (limit != null && limit > 0) ? limit : 10000;
+        return matchingService.getSuggestedUsers(currentUserId, actualLimit);
+    }
+
+    /**
+     * Get all friends (connected users) for the current user.
+     * Sorted arbitrarily (by creation date).
+     * 
+     * @param currentUserId The ID of the current user
+     */
+    public List<UserProfileDto> getFriends(String currentUserId) {
+        try {
+            // Get all connections for the user
+            List<Connection> connections = connectionRepository.findByUser1IdOrUser2Id(currentUserId, currentUserId);
+            
+            // If no connections, return empty list
+            if (connections == null || connections.isEmpty()) {
+                return new ArrayList<>();
+            }
+            
+            // Extract friend user IDs
+            Set<String> friendIds = connections.stream()
+                .map(conn -> conn.getUser1Id().equals(currentUserId) ? conn.getUser2Id() : conn.getUser1Id())
+                .filter(id -> id != null) // Filter out null IDs
+                .collect(Collectors.toSet());
+            
+            // If no valid friend IDs, return empty list
+            if (friendIds.isEmpty()) {
+                return new ArrayList<>();
+            }
+            
+            // Get user objects for friends
+            List<User> friends = userRepository.findAllById(friendIds);
+            
+            // Convert to DTOs and sort by creation date (arbitrary)
+            return friends.stream()
+                .filter(user -> user != null && user.getProfile() != null) // Filter out null users or users without profiles
+                .sorted((u1, u2) -> u2.getCreatedAt().compareTo(u1.getCreatedAt())) // Most recent first
+                .map(this::convertToUserProfileDto)
+                .collect(Collectors.toList());
+        } catch (Exception e) {
+            // Log error and return empty list instead of throwing
+            System.err.println("Error getting friends for user " + currentUserId + ": " + e.getMessage());
+            e.printStackTrace();
+            return new ArrayList<>();
+        }
     }
 
     /**

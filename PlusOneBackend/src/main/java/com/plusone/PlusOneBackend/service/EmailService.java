@@ -10,7 +10,7 @@ public class EmailService {
 
     private final JavaMailSender mailSender;
 
-    @Value("${app.mail.from:sarahdzeng@gmail.com}")
+    @Value("${app.mail.from:chooseluke@gmail.com}")
     private String defaultFrom;
 
     public EmailService(JavaMailSender mailSender) {
