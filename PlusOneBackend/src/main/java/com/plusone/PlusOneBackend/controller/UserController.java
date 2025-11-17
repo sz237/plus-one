@@ -1,11 +1,14 @@
 package com.plusone.PlusOneBackend.controller;
 
+import com.plusone.PlusOneBackend.dto.UserProfileDto;
 import com.plusone.PlusOneBackend.model.User;
+import com.plusone.PlusOneBackend.repository.UserRepository;
 import com.plusone.PlusOneBackend.service.UserSearchService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Handles user-related API requests.
@@ -13,12 +16,13 @@ import java.util.List;
  */
 @RestController
 @RequestMapping("/api/users")
-
 public class UserController {
     private final UserSearchService userSearchService;
+    private final UserRepository userRepository;
 
-    public UserController(UserSearchService userSearchService) {
+    public UserController(UserSearchService userSearchService, UserRepository userRepository) {
         this.userSearchService = userSearchService;
+        this.userRepository = userRepository;
     }
 
     @GetMapping("/search")
@@ -37,5 +41,30 @@ public class UserController {
                 ? userSearchService.searchByName(trimmed, cappedLimit)
                 : userSearchService.searchByInterest(trimmed, cappedLimit);
         return ResponseEntity.ok(users);
+    }
+
+    @GetMapping("/messenger/{messengerId}")
+    public ResponseEntity<UserProfileDto> getByMessengerId(@PathVariable String messengerId) {
+        if (messengerId == null || messengerId.isBlank()) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        Optional<User> userOpt = userRepository.findByMessengerId(messengerId.trim().toLowerCase());
+        return userOpt
+            .map(this::toUserProfileDto)
+            .map(ResponseEntity::ok)
+            .orElse(ResponseEntity.notFound().build());
+    }
+
+    private UserProfileDto toUserProfileDto(User user) {
+        return UserProfileDto.builder()
+            .userId(user.getId())
+            .firstName(user.getFirstName())
+            .lastName(user.getLastName())
+            .email(user.getEmail())
+            .messengerId(user.getMessengerId())
+            .profile(user.getProfile())
+            .createdAt(user.getCreatedAt().toString())
+            .build();
     }
 }

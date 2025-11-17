@@ -56,6 +56,7 @@ export default function Login() {
             email: response.email,
             firstName: response.firstName,
             lastName: response.lastName,
+            messengerId: response.messengerId,
           })
         );
 

@@ -26,6 +26,9 @@ public class User {
     @Indexed(unique = true)
     private String email;
 
+    @Indexed(unique = true)
+    private String messengerId;
+
     private String password; // hashed before persistence
 
     private String firstName;
@@ -61,6 +64,7 @@ public class User {
         this.updatedAt = LocalDateTime.now();
         this.profile = new Profile();
         this.onboarding = new Onboarding(false, 1, null);
+        this.messengerId = null;
     }
 
     /**

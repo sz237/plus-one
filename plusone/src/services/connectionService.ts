@@ -5,6 +5,7 @@ export interface UserProfile {
   userId: string;
   firstName: string;
   lastName: string;
+  messengerId?: string;
   email: string;
   profile: {
     gender?: string | null;
@@ -97,5 +98,11 @@ export const connectionService = {
       params: { userId },
     });
     return data;
-  }
+  },
+
+  async getUserByMessengerId(messengerId: string): Promise<UserProfile> {
+    const id = messengerId.trim().toLowerCase();
+    const { data } = await api.get<UserProfile>(`/users/messenger/${encodeURIComponent(id)}`);
+    return data;
+  },
 };
