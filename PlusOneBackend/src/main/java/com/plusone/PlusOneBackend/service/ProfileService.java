@@ -195,7 +195,6 @@ public class ProfileService {
             .userId(user.getId())
             .firstName(user.getFirstName())
             .lastName(user.getLastName())
-            .messengerId(user.getMessengerId())
             .connectionsCount(connectionsCount)
             .requestsCount(requestsCount)
             .postsCount(posts != null ? posts.size() : 0)

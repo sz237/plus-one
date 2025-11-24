@@ -85,7 +85,6 @@ export default function Signup() {
             email: response.email,
             firstName: response.firstName,
             lastName: response.lastName,
-            messengerId: response.messengerId,
           })
         );
 

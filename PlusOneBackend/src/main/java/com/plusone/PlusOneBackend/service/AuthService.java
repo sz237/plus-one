@@ -1,16 +1,15 @@
 package com.plusone.PlusOneBackend.service;
 
-import java.util.Optional;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Service;
-
 import com.plusone.PlusOneBackend.dto.AuthResponse;
 import com.plusone.PlusOneBackend.dto.LoginRequest;
 import com.plusone.PlusOneBackend.dto.SignupRequest;
 import com.plusone.PlusOneBackend.model.User;
 import com.plusone.PlusOneBackend.repository.UserRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+
+import java.util.Optional;
 
 @Service
 public class AuthService {
@@ -20,9 +19,6 @@ public class AuthService {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
-
-    @Autowired
-    private MessengerIdService messengerIdService;
 
     private static final String VANDERBILT_EMAIL_DOMAIN = "@vanderbilt.edu";
 
@@ -65,12 +61,6 @@ public class AuthService {
                 request.getFirstName().trim(),
                 request.getLastName().trim()
             );
-            newUser.setMessengerId(
-                messengerIdService.generateMessengerId(
-                    request.getFirstName().trim(),
-                    request.getLastName().trim()
-                )
-            );
 
             // Save to database
             User savedUser = userRepository.save(newUser);
@@ -81,8 +71,7 @@ public class AuthService {
                 savedUser.getId(),
                 savedUser.getEmail(),
                 savedUser.getFirstName(),
-                savedUser.getLastName(),
-                savedUser.getMessengerId()
+                savedUser.getLastName()
             );
 
         } catch (Exception e) {
@@ -115,8 +104,7 @@ public class AuthService {
                 user.getId(),
                 user.getEmail(),
                 user.getFirstName(),
-                user.getLastName(),
-                user.getMessengerId()
+                user.getLastName()
             );
 
         } catch (Exception e) {

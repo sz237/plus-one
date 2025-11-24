@@ -44,7 +44,7 @@ export default function Messages() {
   const [availableUsers, setAvailableUsers] = useState<UserProfile[]>([]);
   const [usersLoading, setUsersLoading] = useState(false);
   const [pickerError, setPickerError] = useState<string | null>(null);
-  const [messengerIdInput, setMessengerIdInput] = useState("");
+  const [selectedUserOptionId, setSelectedUserOptionId] = useState("");
   const [pickerLoading, setPickerLoading] = useState(false);
 
   const threadEndRef = useRef<HTMLDivElement | null>(null);
@@ -208,32 +208,13 @@ export default function Messages() {
     }
   };
 
-  const handleMessengerIdSubmit = async (
-    event: React.FormEvent<HTMLFormElement>
-  ) => {
+  const handlePickerSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!user?.userId || pickerLoading) return;
-    const normalized = messengerIdInput.trim().toLowerCase();
-    if (!normalized) return;
-    setPickerError(null);
+    if (!selectedUserOptionId || pickerLoading) return;
     setPickerLoading(true);
-    try {
-      const profile = await connectionService.getUserByMessengerId(normalized);
-      if (!profile?.userId) {
-        throw new Error("No user found for that messenger ID");
-      }
-      if (profile.userId === user.userId) {
-        throw new Error("You already are this user");
-      }
-      await openConversationWithUser(profile.userId);
-      setMessengerIdInput("");
-    } catch (err) {
-      setPickerError(
-        err instanceof Error ? err.message : "Unable to find that messenger ID"
-      );
-    } finally {
-      setPickerLoading(false);
-    }
+    await openConversationWithUser(selectedUserOptionId);
+    setPickerLoading(false);
+    setSelectedUserOptionId("");
   };
 
   const renderConversationAvatar = (conversation: ConversationSummary) => {
@@ -288,50 +269,33 @@ export default function Messages() {
           <header>
             <form
               className="messages-search-form"
-              onSubmit={handleMessengerIdSubmit}
+              onSubmit={handlePickerSubmit}
               autoComplete="off"
             >
-              <input
-                type="text"
+              <select
                 className="form-control"
-                placeholder="Enter Messenger ID (e.g., janedoe-ab12)"
-                value={messengerIdInput}
-                onChange={(e) => setMessengerIdInput(e.target.value)}
-                disabled={pickerLoading}
-              />
+                value={selectedUserOptionId}
+                onChange={(e) => setSelectedUserOptionId(e.target.value)}
+                disabled={usersLoading}
+              >
+                <option value="">Pick someone to message</option>
+                {availableUsers.map((person) => (
+                  <option key={person.userId} value={person.userId}>
+                    {person.firstName || "Unknown"} {person.lastName || ""} —{" "}
+                    {person.email}
+                  </option>
+                ))}
+              </select>
               <button
                 type="submit"
                 className="btn btn-dark"
-                disabled={!messengerIdInput.trim() || pickerLoading}
+                disabled={
+                  !selectedUserOptionId || usersLoading || pickerLoading
+                }
               >
                 {pickerLoading ? "…" : "Go"}
               </button>
             </form>
-            <p className="text-muted small mt-2 mb-1">
-              Messenger IDs appear on every user's My Page.
-            </p>
-            {availableUsers.length > 0 && (
-              <div className="small">
-                <div className="fw-semibold mb-1">Recently viewed</div>
-                <div className="d-flex flex-wrap gap-2">
-                  {availableUsers.slice(0, 4).map((person) => (
-                    <button
-                      key={person.userId}
-                      type="button"
-                      className="btn btn-outline-dark btn-sm"
-                      onClick={() =>
-                        person.messengerId &&
-                        setMessengerIdInput(person.messengerId)
-                      }
-                      disabled={!person.messengerId}
-                    >
-                      {person.firstName} {person.lastName}
-                      {person.messengerId ? ` (${person.messengerId})` : ""}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
             {usersLoading && (
               <p className="text-center small mt-2 mb-0">Loading people…</p>
             )}

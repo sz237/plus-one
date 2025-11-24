@@ -257,7 +257,6 @@ public class MatchingService {
             .firstName(user.getFirstName())
             .lastName(user.getLastName())
             .email(user.getEmail())
-            .messengerId(user.getMessengerId())
             .profile(user.getProfile())
             .createdAt(user.getCreatedAt().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME))
             .build();
@@ -284,3 +283,4 @@ public class MatchingService {
         }
     }
 }
+

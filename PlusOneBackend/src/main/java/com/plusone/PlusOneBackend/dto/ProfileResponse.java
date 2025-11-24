@@ -18,7 +18,6 @@ public class ProfileResponse {
     private String userId;
     private String firstName;
     private String lastName;
-    private String messengerId;
     private int connectionsCount;
     private int requestsCount;
     private int postsCount;

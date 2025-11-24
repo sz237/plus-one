@@ -16,7 +16,6 @@ public class UserProfileDto {
     private String firstName;
     private String lastName;
     private String email;
-    private String messengerId;
     private Profile profile;
     private String createdAt;
 }

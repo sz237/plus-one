@@ -56,7 +56,6 @@ export interface ProfileResponse {
   userId: string;
   firstName: string;
   lastName: string;
-  messengerId: string;
   connectionsCount: number;
   requestsCount: number;
   postsCount: number;
