@@ -15,7 +15,6 @@ export default function MyPage() {
     userId: string;
     firstName: string;
     lastName: string;
-    messengerId?: string;
     connectionsCount: number;
     requestsCount: number;
     postsCount: number;
@@ -49,7 +48,6 @@ export default function MyPage() {
           userId: res.userId,
           firstName: res.firstName,
           lastName: res.lastName,
-          messengerId: res.messengerId,
           connectionsCount: res.connectionsCount,
           requestsCount: res.requestsCount,
           postsCount: res.postsCount,
@@ -128,11 +126,9 @@ export default function MyPage() {
         userId: res.userId,
         firstName: res.firstName,
         lastName: res.lastName,
-        messengerId: res.messengerId,
         connectionsCount: res.connectionsCount,
         requestsCount: res.requestsCount,
         postsCount: res.postsCount,
-        profilePhoto: res.profile?.profilePhoto,
       });
     } catch (error) {
       console.error('Failed to reload profile:', error);
@@ -231,25 +227,6 @@ export default function MyPage() {
                 </Link>
               </div>
             </div>
-
-            {profile?.messengerId && (
-              <div className="mb-4">
-                <div className="text-muted text-uppercase small">Messenger ID</div>
-                <div className="d-flex align-items-center gap-2">
-                  <code>{profile.messengerId}</code>
-                  <button
-                    type="button"
-                    className="btn btn-outline-dark btn-sm"
-                    onClick={() => navigator.clipboard.writeText(String(profile.messengerId))}
-                  >
-                    Copy
-                  </button>
-                </div>
-                <small className="text-muted">
-                  Share this so friends can start a chat from the Messages page.
-                </small>
-              </div>
-            )}
 
             {/* Connection Requests Section */}
             <div className="mb-4">
