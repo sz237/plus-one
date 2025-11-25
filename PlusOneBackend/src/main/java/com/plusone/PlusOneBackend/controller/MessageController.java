@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.util.StringUtils;
 
 import com.plusone.PlusOneBackend.dto.message.ConversationResponse;
 import com.plusone.PlusOneBackend.dto.message.MessageResponse;
@@ -30,45 +31,53 @@ public class MessageController {
 
     private final MessageService messageService;
 
-    private String resolveUser(String header) {
-        if (header == null || header.isBlank()) {
-            throw new IllegalArgumentException("Missing X-User-Id header (replace with real auth)");
+    private String resolveUser(String messengerIdHeader, String userIdHeader) {
+        if (StringUtils.hasText(messengerIdHeader)) {
+            return messengerIdHeader.trim();
         }
-        return header;
+        if (StringUtils.hasText(userIdHeader)) {
+            return userIdHeader.trim();
+        }
+        throw new IllegalArgumentException("Missing X-Messenger-Id/X-User-Id header (replace with real auth)");
     }
 
     @GetMapping("/conversations")
     public List<ConversationResponse> listConversations(
-            @RequestHeader("X-User-Id") String userId) {
-        return messageService.listConversations(resolveUser(userId));
+            @RequestHeader(value = "X-Messenger-Id", required = false) String messengerId,
+            @RequestHeader(value = "X-User-Id", required = false) String userId) {
+        return messageService.listConversations(resolveUser(messengerId, userId));
     }
 
     @PostMapping("/conversations/{otherUserId}")
     public ConversationResponse openConversation(
-            @RequestHeader("X-User-Id") String userId,
-            @PathVariable String otherUserId) {
-        return messageService.openConversation(resolveUser(userId), otherUserId);
+            @RequestHeader(value = "X-Messenger-Id", required = false) String messengerId,
+            @RequestHeader(value = "X-User-Id", required = false) String userId,
+            @PathVariable("otherUserId") String otherMessengerId) {
+        return messageService.openConversation(resolveUser(messengerId, userId), otherMessengerId);
     }
 
     @GetMapping("/conversations/{conversationId}/messages")
     public List<MessageResponse> getMessages(
-            @RequestHeader("X-User-Id") String userId,
+            @RequestHeader(value = "X-Messenger-Id", required = false) String messengerId,
+            @RequestHeader(value = "X-User-Id", required = false) String userId,
             @PathVariable String conversationId) {
-        return messageService.getMessages(resolveUser(userId), conversationId);
+        return messageService.getMessages(resolveUser(messengerId, userId), conversationId);
     }
 
     @PatchMapping("/conversations/{conversationId}/read")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void markRead(
-            @RequestHeader("X-User-Id") String userId,
+            @RequestHeader(value = "X-Messenger-Id", required = false) String messengerId,
+            @RequestHeader(value = "X-User-Id", required = false) String userId,
             @PathVariable String conversationId) {
-        messageService.markConversationRead(resolveUser(userId), conversationId);
+        messageService.markConversationRead(resolveUser(messengerId, userId), conversationId);
     }
 
     @PostMapping
     public MessageResponse sendMessage(
-            @RequestHeader("X-User-Id") String userId,
+            @RequestHeader(value = "X-Messenger-Id", required = false) String messengerId,
+            @RequestHeader(value = "X-User-Id", required = false) String userId,
             @RequestBody @Valid SendMessageRequest request) {
-        return messageService.sendMessage(resolveUser(userId), request);
+        return messageService.sendMessage(resolveUser(messengerId, userId), request);
     }
 }

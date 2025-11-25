@@ -10,10 +10,9 @@ import com.plusone.PlusOneBackend.model.Message;
 public interface MessageRepository extends MongoRepository<Message, String> {
     List<Message> findByConversationIdOrderBySentAtAsc(String conversationId);
 
-    long countByConversationIdAndRecipientIdAndReadAtIsNull(String conversationId, String recipientId);
+    long countByConversationIdAndRecipientMessengerIdAndReadAtIsNull(String conversationId, String recipientMessengerId);
 
-    List<Message> findByConversationIdAndRecipientIdAndReadAtIsNull(String conversationId, String recipientId);
+    List<Message> findByConversationIdAndRecipientMessengerIdAndReadAtIsNull(String conversationId, String recipientMessengerId);
 
     long countByConversationIdAndSentAtAfter(String conversationId, Instant sentAt);
 }
-

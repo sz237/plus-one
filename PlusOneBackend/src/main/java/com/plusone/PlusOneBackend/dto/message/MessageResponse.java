@@ -10,10 +10,10 @@ import lombok.Value;
 public class MessageResponse {
     String id;
     String conversationId;
-    String senderId;
+    String senderMessengerId;
     String senderName;
     String senderProfilePicUrl;
-    String recipientId;
+    String recipientMessengerId;
     String body;
     Instant sentAt;
     Instant readAt;

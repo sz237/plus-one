@@ -5,64 +5,72 @@ import type {
 } from "../types/message";
 import { api } from "./http";
 
-const withUser = (userId: string) => ({
+const withMessenger = (messengerId?: string | null, userId?: string | null) => ({
   headers: {
-    "X-User-Id": userId,
+    ...(messengerId ? { "X-Messenger-Id": messengerId } : {}),
+    ...(userId ? { "X-User-Id": userId } : {}),
   },
 });
 
 export const messageService = {
-  async listConversations(userId: string): Promise<ConversationSummary[]> {
+  async listConversations(
+    messengerId: string,
+    userId?: string | null
+  ): Promise<ConversationSummary[]> {
     const { data } = await api.get<ConversationSummary[]>(
       "/messages/conversations",
-      withUser(userId)
+      withMessenger(messengerId, userId)
     );
     return data;
   },
 
   async openConversation(
-    userId: string,
-    otherUserId: string
+    messengerId: string,
+    otherMessengerId: string,
+    userId?: string | null
   ): Promise<ConversationSummary> {
     const { data } = await api.post<ConversationSummary>(
-      `/messages/conversations/${otherUserId}`,
+      `/messages/conversations/${encodeURIComponent(otherMessengerId)}`,
       null,
-      withUser(userId)
+      withMessenger(messengerId, userId)
     );
     return data;
   },
 
   async fetchMessages(
-    userId: string,
-    conversationId: string
+    messengerId: string,
+    conversationId: string,
+    userId?: string | null
   ): Promise<ChatMessage[]> {
     const { data } = await api.get<ChatMessage[]>(
       `/messages/conversations/${conversationId}/messages`,
-      withUser(userId)
+      withMessenger(messengerId, userId)
     );
     return data;
   },
 
   async sendMessage(
-    userId: string,
-    payload: SendMessagePayload
+    messengerId: string,
+    payload: SendMessagePayload,
+    userId?: string | null
   ): Promise<ChatMessage> {
     const { data } = await api.post<ChatMessage>(
       "/messages",
       payload,
-      withUser(userId)
+      withMessenger(messengerId, userId)
     );
     return data;
   },
 
   async markConversationRead(
-    userId: string,
-    conversationId: string
+    messengerId: string,
+    conversationId: string,
+    userId?: string | null
   ): Promise<void> {
     await api.patch(
       `/messages/conversations/${conversationId}/read`,
       null,
-      withUser(userId)
+      withMessenger(messengerId, userId)
     );
   },
 };

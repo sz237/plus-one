@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import PageTemplate from "../components/PageTemplate";
 import { connectionService, type UserProfile } from "../services/connectionService";
 import { messageService } from "../services/messageService";
+import { postService } from "../services/postService";
 import type {
   ChatMessage,
   ConversationSummary,
@@ -14,6 +15,7 @@ type StoredUser = {
   email: string;
   firstName: string;
   lastName: string;
+  messengerId?: string;
 };
 
 const DEFAULT_AVATAR =
@@ -46,6 +48,9 @@ export default function Messages() {
   const [pickerError, setPickerError] = useState<string | null>(null);
   const [messengerIdInput, setMessengerIdInput] = useState("");
   const [pickerLoading, setPickerLoading] = useState(false);
+  const [actorMessengerId, setActorMessengerId] = useState<string | null>(
+    user?.messengerId ?? null
+  );
 
   const threadEndRef = useRef<HTMLDivElement | null>(null);
 
@@ -55,6 +60,33 @@ export default function Messages() {
       null,
     [conversations, selectedConversationId]
   );
+
+  useEffect(() => {
+    if (!user?.userId) {
+      return;
+    }
+    if (user.messengerId) {
+      setActorMessengerId(user.messengerId);
+      return;
+    }
+
+    postService
+      .getProfile(user.userId)
+      .then((profile) => {
+        if (profile?.messengerId) {
+          setActorMessengerId(profile.messengerId);
+          localStorage.setItem(
+            "user",
+            JSON.stringify({ ...user, messengerId: profile.messengerId })
+          );
+        } else {
+          setError("We couldn't find your messenger ID. Please log out and back in.");
+        }
+      })
+      .catch(() =>
+        setError("We couldn't load your messenger ID. Please log out and back in.")
+      );
+  }, [user?.userId, user?.messengerId, user]);
 
   useEffect(() => {
     if (!user?.userId) {
@@ -77,12 +109,20 @@ export default function Messages() {
       navigate("/login", { replace: true });
       return;
     }
+    if (!actorMessengerId) {
+      setConversationsLoading(false);
+      setError("Messenger ID missing. Please log out and back in to refresh it.");
+      return;
+    }
 
     (async () => {
       setConversationsLoading(true);
       setError(null);
       try {
-        const data = await messageService.listConversations(user.userId);
+        const data = await messageService.listConversations(
+          actorMessengerId,
+          user.userId
+        );
         setConversations(data);
         if (data.length) {
           setSelectedConversationId((current) => current ?? data[0].conversationId);
@@ -95,23 +135,25 @@ export default function Messages() {
         setConversationsLoading(false);
       }
     })();
-  }, [navigate, user?.userId]);
+  }, [actorMessengerId, navigate, user?.userId]);
 
   useEffect(() => {
-    if (!user?.userId || !selectedConversationId) return;
+    if (!user?.userId || !actorMessengerId || !selectedConversationId) return;
 
     (async () => {
       setThreadLoading(true);
       setThreadError(null);
       try {
         const data = await messageService.fetchMessages(
-          user.userId,
-          selectedConversationId
+          actorMessengerId,
+          selectedConversationId,
+          user.userId
         );
         setMessages(data);
         await messageService.markConversationRead(
-          user.userId,
-          selectedConversationId
+          actorMessengerId,
+          selectedConversationId,
+          user.userId
         );
         setConversations((prev) =>
           prev.map((c) =>
@@ -128,7 +170,7 @@ export default function Messages() {
         setThreadLoading(false);
       }
     })();
-  }, [selectedConversationId, user?.userId]);
+  }, [actorMessengerId, selectedConversationId, user?.userId]);
 
   useEffect(() => {
     threadEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -147,6 +189,7 @@ export default function Messages() {
   const handleSend = async () => {
     if (
       !user?.userId ||
+      !actorMessengerId ||
       !selectedConversation ||
       !composerValue.trim() ||
       sending
@@ -157,12 +200,13 @@ export default function Messages() {
     try {
       const payload = {
         conversationId: selectedConversation.conversationId,
-        recipientId: selectedConversation.otherUserId,
+        recipientMessengerId: selectedConversation.otherMessengerId,
         body: composerValue.trim(),
       };
       const newMessage = await messageService.sendMessage(
-        user.userId,
-        payload
+        actorMessengerId,
+        payload,
+        user.userId
       );
       setMessages((prev) => [...prev, newMessage]);
       setComposerValue("");
@@ -187,12 +231,13 @@ export default function Messages() {
     }
   };
 
-  const openConversationWithUser = async (targetUserId: string) => {
-    if (!user?.userId) return;
+  const openConversationWithUser = async (targetMessengerId: string) => {
+    if (!user?.userId || !actorMessengerId) return;
     try {
       const conversation = await messageService.openConversation(
-        user.userId,
-        targetUserId
+        actorMessengerId,
+        targetMessengerId,
+        user.userId
       );
       setConversations((prev) => {
         const filtered = prev.filter(
@@ -212,20 +257,20 @@ export default function Messages() {
     event: React.FormEvent<HTMLFormElement>
   ) => {
     event.preventDefault();
-    if (!user?.userId || pickerLoading) return;
+    if (!user?.userId || !actorMessengerId || pickerLoading) return;
     const normalized = messengerIdInput.trim().toLowerCase();
     if (!normalized) return;
     setPickerError(null);
     setPickerLoading(true);
     try {
       const profile = await connectionService.getUserByMessengerId(normalized);
-      if (!profile?.userId) {
+      if (!profile?.userId || !profile.messengerId) {
         throw new Error("No user found for that messenger ID");
       }
-      if (profile.userId === user.userId) {
+      if (profile.messengerId === actorMessengerId) {
         throw new Error("You already are this user");
       }
-      await openConversationWithUser(profile.userId);
+      await openConversationWithUser(profile.messengerId);
       setMessengerIdInput("");
     } catch (err) {
       setPickerError(
@@ -248,7 +293,7 @@ export default function Messages() {
   };
 
   const renderMessageBubble = (message: ChatMessage) => {
-    const isMe = message.senderId === user.userId;
+    const isMe = message.senderMessengerId === actorMessengerId;
     return (
       <div
         key={message.id}
@@ -297,12 +342,14 @@ export default function Messages() {
                 placeholder="Enter Messenger ID (e.g., janedoe-ab12)"
                 value={messengerIdInput}
                 onChange={(e) => setMessengerIdInput(e.target.value)}
-                disabled={pickerLoading}
+                disabled={pickerLoading || !actorMessengerId}
               />
               <button
                 type="submit"
                 className="btn btn-dark"
-                disabled={!messengerIdInput.trim() || pickerLoading}
+                disabled={
+                  !messengerIdInput.trim() || pickerLoading || !actorMessengerId
+                }
               >
                 {pickerLoading ? "…" : "Go"}
               </button>
@@ -425,12 +472,12 @@ export default function Messages() {
                   value={composerValue}
                   onChange={(e) => setComposerValue(e.target.value)}
                   placeholder="Message in progress"
-                  disabled={!selectedConversation || sending}
+                  disabled={!selectedConversation || sending || !actorMessengerId}
                 />
                 <button
                   type="button"
                   onClick={handleSend}
-                  disabled={!composerValue.trim() || sending}
+                  disabled={!composerValue.trim() || sending || !actorMessengerId}
                 >
                   {sending ? "Sending…" : "Send"}
                 </button>

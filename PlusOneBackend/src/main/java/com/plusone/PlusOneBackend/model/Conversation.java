@@ -7,6 +7,7 @@ import java.util.Map;
 
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.mongodb.core.mapping.Field;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -30,7 +31,8 @@ public class Conversation {
     private String id;
 
     @Builder.Default
-    private List<String> participantIds = new ArrayList<>();
+    @Field("participantIds")
+    private List<String> participantMessengerIds = new ArrayList<>();
 
     @Builder.Default
     private Instant createdAt = Instant.now();
@@ -41,8 +43,10 @@ public class Conversation {
     private String lastMessagePreview;
 
     @Builder.Default
-    private List<String> unreadBy = new ArrayList<>();
+    @Field("unreadBy")
+    private List<String> unreadByMessengerIds = new ArrayList<>();
 
     @Builder.Default
+    @Field("lastReadAt")
     private Map<String, Instant> lastReadAt = Map.of();
 }

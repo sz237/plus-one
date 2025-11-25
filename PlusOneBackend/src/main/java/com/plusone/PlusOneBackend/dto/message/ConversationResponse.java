@@ -9,6 +9,7 @@ import lombok.Value;
 @Builder
 public class ConversationResponse {
     String conversationId;
+    String otherMessengerId;
     String otherUserId;
     String otherUserName;
     String otherUserPhotoUrl;

@@ -104,6 +104,9 @@ public class AuthService {
 
             User user = userOptional.get();
 
+            // Ensure legacy users gain a messengerId
+            messengerIdService.ensureMessengerId(user);
+
             // Verify password
             if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
                 return new AuthResponse("Invalid email or password");
@@ -131,5 +134,4 @@ public class AuthService {
         return email != null && email.toLowerCase().trim().endsWith(VANDERBILT_EMAIL_DOMAIN);
     }
 }
-
 

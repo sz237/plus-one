@@ -3,6 +3,7 @@ import java.time.Instant;
 
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.mongodb.core.mapping.Field;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -24,8 +25,10 @@ public class Message {
     private String id;
 
     private String conversationId;
-    private String senderId;
-    private String recipientId;
+    @Field("senderId")
+    private String senderMessengerId;
+    @Field("recipientId")
+    private String recipientMessengerId;
 
     private String body;
 

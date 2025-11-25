@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service;
 
 import java.security.SecureRandom;
 import java.text.Normalizer;
+import java.util.List;
 import java.util.HexFormat;
 
 @Service
@@ -43,5 +44,39 @@ public class MessengerIdService {
         byte[] randomBytes = new byte[2];
         RANDOM.nextBytes(randomBytes);
         return HexFormat.of().formatHex(randomBytes);
+    }
+
+    /**
+     * Ensure the provided user has a messengerId. If missing, generate one,
+     * persist it, and return the value.
+     */
+    public String ensureMessengerId(com.plusone.PlusOneBackend.model.User user) {
+        if (user == null) {
+            throw new IllegalArgumentException("User cannot be null");
+        }
+        if (user.getMessengerId() != null && !user.getMessengerId().isBlank()) {
+            return user.getMessengerId();
+        }
+        String generated = generateMessengerId(user.getFirstName(), user.getLastName());
+        user.setMessengerId(generated);
+        userRepository.save(user);
+        return generated;
+    }
+
+    /**
+     * Backfill messenger IDs for any existing users missing one.
+     *
+     * @return the number of users updated
+     */
+    public int backfillMissingMessengerIds() {
+        List<com.plusone.PlusOneBackend.model.User> users = userRepository.findAll();
+        int count = 0;
+        for (com.plusone.PlusOneBackend.model.User user : users) {
+            if (user.getMessengerId() == null || user.getMessengerId().isBlank()) {
+                ensureMessengerId(user);
+                count++;
+            }
+        }
+        return count;
     }
 }

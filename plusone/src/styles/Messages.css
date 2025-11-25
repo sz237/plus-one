@@ -24,7 +24,7 @@
   display: flex;
   gap: 8px;
 }
-.messages-search-form select {
+.messages-search-form input {
   flex: 1;
   border: 2px solid #000;
   border-radius: 8px;
