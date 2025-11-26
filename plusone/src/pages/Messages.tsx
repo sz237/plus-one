@@ -3,10 +3,7 @@ import { useNavigate } from "react-router-dom";
 import PageTemplate from "../components/PageTemplate";
 import { connectionService, type UserProfile } from "../services/connectionService";
 import { messageService } from "../services/messageService";
-import type {
-  ChatMessage,
-  ConversationSummary,
-} from "../types/message";
+import type { ChatMessage, ConversationSummary } from "../types/message";
 import "../styles/Messages.css";
 
 type StoredUser = {
@@ -82,7 +79,7 @@ export default function Messages() {
       setConversationsLoading(true);
       setError(null);
       try {
-        const data = await messageService.listConversations(user.userId);
+        const data = await messageService.listConversations();
         setConversations(data);
         if (data.length) {
           setSelectedConversationId((current) => current ?? data[0].conversationId);
@@ -104,15 +101,16 @@ export default function Messages() {
       setThreadLoading(true);
       setThreadError(null);
       try {
-        const data = await messageService.fetchMessages(
-          user.userId,
-          selectedConversationId
+        const convo = conversations.find(
+          (c) => c.conversationId === selectedConversationId
         );
+        if (!convo) {
+          setThreadLoading(false);
+          return;
+        }
+        const data = await messageService.fetchMessagesWithUser(convo.otherUserId);
         setMessages(data);
-        await messageService.markConversationRead(
-          user.userId,
-          selectedConversationId
-        );
+        await messageService.markConversationRead(selectedConversationId);
         setConversations((prev) =>
           prev.map((c) =>
             c.conversationId === selectedConversationId
@@ -128,7 +126,7 @@ export default function Messages() {
         setThreadLoading(false);
       }
     })();
-  }, [selectedConversationId, user?.userId]);
+  }, [conversations, selectedConversationId, user?.userId]);
 
   useEffect(() => {
     threadEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -160,10 +158,7 @@ export default function Messages() {
         recipientId: selectedConversation.otherUserId,
         body: composerValue.trim(),
       };
-      const newMessage = await messageService.sendMessage(
-        user.userId,
-        payload
-      );
+      const newMessage = await messageService.sendMessage(payload);
       setMessages((prev) => [...prev, newMessage]);
       setComposerValue("");
       setConversations((prev) => {
@@ -190,10 +185,7 @@ export default function Messages() {
   const openConversationWithUser = async (targetUserId: string) => {
     if (!user?.userId) return;
     try {
-      const conversation = await messageService.openConversation(
-        user.userId,
-        targetUserId
-      );
+      const conversation = await messageService.openConversation(targetUserId);
       setConversations((prev) => {
         const filtered = prev.filter(
           (c) => c.conversationId !== conversation.conversationId

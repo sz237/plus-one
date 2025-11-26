@@ -33,6 +33,9 @@ public class Conversation {
     private List<String> participantIds = new ArrayList<>();
 
     @Builder.Default
+    private List<String> messageIds = new ArrayList<>();
+
+    @Builder.Default
     private Instant createdAt = Instant.now();
 
     @Builder.Default
