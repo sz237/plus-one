@@ -3,10 +3,7 @@ import { useNavigate } from "react-router-dom";
 import PageTemplate from "../components/PageTemplate";
 import { connectionService, type UserProfile } from "../services/connectionService";
 import { messageService } from "../services/messageService";
-import type {
-  ChatMessage,
-  ConversationSummary,
-} from "../types/message";
+import type { ChatMessage, ConversationSummary } from "../types/message";
 import "../styles/Messages.css";
 
 type StoredUser = {
@@ -44,7 +41,7 @@ export default function Messages() {
   const [availableUsers, setAvailableUsers] = useState<UserProfile[]>([]);
   const [usersLoading, setUsersLoading] = useState(false);
   const [pickerError, setPickerError] = useState<string | null>(null);
-  const [selectedUserOptionId, setSelectedUserOptionId] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
   const [pickerLoading, setPickerLoading] = useState(false);
 
   const threadEndRef = useRef<HTMLDivElement | null>(null);
@@ -82,7 +79,7 @@ export default function Messages() {
       setConversationsLoading(true);
       setError(null);
       try {
-        const data = await messageService.listConversations(user.userId);
+        const data = await messageService.listConversations();
         setConversations(data);
         if (data.length) {
           setSelectedConversationId((current) => current ?? data[0].conversationId);
@@ -104,15 +101,16 @@ export default function Messages() {
       setThreadLoading(true);
       setThreadError(null);
       try {
-        const data = await messageService.fetchMessages(
-          user.userId,
-          selectedConversationId
+        const convo = conversations.find(
+          (c) => c.conversationId === selectedConversationId
         );
+        if (!convo) {
+          setThreadLoading(false);
+          return;
+        }
+        const data = await messageService.fetchMessagesWithUser(convo.otherUserId);
         setMessages(data);
-        await messageService.markConversationRead(
-          user.userId,
-          selectedConversationId
-        );
+        await messageService.markConversationRead(selectedConversationId);
         setConversations((prev) =>
           prev.map((c) =>
             c.conversationId === selectedConversationId
@@ -128,7 +126,7 @@ export default function Messages() {
         setThreadLoading(false);
       }
     })();
-  }, [selectedConversationId, user?.userId]);
+  }, [conversations, selectedConversationId, user?.userId]);
 
   useEffect(() => {
     threadEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -160,10 +158,7 @@ export default function Messages() {
         recipientId: selectedConversation.otherUserId,
         body: composerValue.trim(),
       };
-      const newMessage = await messageService.sendMessage(
-        user.userId,
-        payload
-      );
+      const newMessage = await messageService.sendMessage(payload);
       setMessages((prev) => [...prev, newMessage]);
       setComposerValue("");
       setConversations((prev) => {
@@ -190,10 +185,7 @@ export default function Messages() {
   const openConversationWithUser = async (targetUserId: string) => {
     if (!user?.userId) return;
     try {
-      const conversation = await messageService.openConversation(
-        user.userId,
-        targetUserId
-      );
+      const conversation = await messageService.openConversation(targetUserId);
       setConversations((prev) => {
         const filtered = prev.filter(
           (c) => c.conversationId !== conversation.conversationId
@@ -210,11 +202,26 @@ export default function Messages() {
 
   const handlePickerSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!selectedUserOptionId || pickerLoading) return;
+    if (!searchQuery.trim() || pickerLoading) return;
     setPickerLoading(true);
-    await openConversationWithUser(selectedUserOptionId);
+    setPickerError(null);
+    const needle = searchQuery.trim().toLowerCase();
+    const match = availableUsers.find((person) => {
+      const first = person.firstName || "";
+      const last = person.lastName || "";
+      const full = `${first} ${last}`.trim().toLowerCase();
+      return full.includes(needle);
+    });
+
+    if (!match) {
+      setPickerError("No user found with that name");
+      setPickerLoading(false);
+      return;
+    }
+
+    await openConversationWithUser(match.userId);
     setPickerLoading(false);
-    setSelectedUserOptionId("");
+    setSearchQuery("");
   };
 
   const renderConversationAvatar = (conversation: ConversationSummary) => {
@@ -272,26 +279,18 @@ export default function Messages() {
               onSubmit={handlePickerSubmit}
               autoComplete="off"
             >
-              <select
+              <input
+                type="text"
                 className="form-control"
-                value={selectedUserOptionId}
-                onChange={(e) => setSelectedUserOptionId(e.target.value)}
+                placeholder="Search by name"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
                 disabled={usersLoading}
-              >
-                <option value="">Pick someone to message</option>
-                {availableUsers.map((person) => (
-                  <option key={person.userId} value={person.userId}>
-                    {person.firstName || "Unknown"} {person.lastName || ""} —{" "}
-                    {person.email}
-                  </option>
-                ))}
-              </select>
+              />
               <button
                 type="submit"
                 className="btn btn-dark"
-                disabled={
-                  !selectedUserOptionId || usersLoading || pickerLoading
-                }
+                disabled={!searchQuery.trim() || usersLoading || pickerLoading}
               >
                 {pickerLoading ? "…" : "Go"}
               </button>

@@ -13,6 +13,6 @@ public interface ConversationRepository extends MongoRepository<Conversation, St
 
     List<Conversation> findByParticipantIdsContaining(String userId);
 
-    @Query("{ 'participantIds': { $all: ?0 }, 'participantIds': { $size: ?1 } }")
+    @Query("{ $and: [ { 'participantIds': { $all: ?0 } }, { 'participantIds': { $size: ?1 } } ] }")
     Optional<Conversation> findDirectConversation(List<String> participants, int size);
 }

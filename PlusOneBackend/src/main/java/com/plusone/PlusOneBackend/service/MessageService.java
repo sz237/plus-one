@@ -5,7 +5,9 @@ import static java.util.Comparator.comparing;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -50,7 +52,9 @@ public class MessageService {
 
         Optional<Conversation> existing = conversationRepository.findDirectConversation(key, key.size());
         if (existing.isPresent()) {
-            return existing.get();
+            Conversation convo = existing.get();
+            ensureMessageList(convo);
+            return convo;
         }
 
         Conversation convo = Conversation.builder()
@@ -76,13 +80,16 @@ public class MessageService {
         return toConversationResponse(convo, currentUserId);
     }
 
-    public List<MessageResponse> getMessages(String currentUserId, String conversationId) {
-        Conversation convo = conversationRepository.findById(conversationId)
-                .orElseThrow(() -> new IllegalArgumentException("Conversation not found"));
+    public List<MessageResponse> getMessagesWithUser(String currentUserId, String otherUserId) {
+        List<String> key = participantKey(currentUserId, otherUserId);
+        Optional<Conversation> convoOpt = conversationRepository.findDirectConversation(key, key.size());
+        if (convoOpt.isEmpty()) {
+            return List.of();
+        }
+        Conversation convo = convoOpt.get();
         requireParticipant(convo, currentUserId);
 
-        List<Message> messages = messageRepository.findByConversationIdOrderBySentAtAsc(conversationId);
-        return messages.stream()
+        return fetchMessagesInOrder(convo).stream()
                 .map(this::toMessageResponse)
                 .toList();
     }
@@ -106,6 +113,7 @@ public class MessageService {
 
         messageRepository.save(message);
 
+        ensureMessageList(convo).add(message.getId());
         updateConversationMetadata(convo, message);
         conversationRepository.save(convo);
 
@@ -117,8 +125,9 @@ public class MessageService {
                 .orElseThrow(() -> new IllegalArgumentException("Conversation not found"));
         requireParticipant(convo, currentUserId);
 
-        List<Message> unread = messageRepository
-                .findByConversationIdAndRecipientIdAndReadAtIsNull(conversationId, currentUserId);
+        List<Message> unread = fetchMessagesInOrder(convo).stream()
+                .filter(msg -> currentUserId.equals(msg.getRecipientId()) && msg.getReadAt() == null)
+                .toList();
 
         Instant now = Instant.now();
         unread.forEach(msg -> msg.setReadAt(now));
@@ -144,6 +153,36 @@ public class MessageService {
         if (!convo.getUnreadBy().contains(latest.getRecipientId())) {
             convo.getUnreadBy().add(latest.getRecipientId());
         }
+    }
+
+    private List<String> ensureMessageList(Conversation convo) {
+        if (convo.getMessageIds() == null) {
+            convo.setMessageIds(new ArrayList<>());
+        }
+        return convo.getMessageIds();
+    }
+
+    private List<Message> fetchMessagesInOrder(Conversation convo) {
+        List<String> ids = ensureMessageList(convo);
+        if (!ids.isEmpty()) {
+            Map<String, Message> byId = messageRepository.findAllById(ids).stream()
+                    .collect(Collectors.toMap(Message::getId, m -> m, (a, b) -> a));
+            List<Message> ordered = new ArrayList<>();
+            for (String id : ids) {
+                Message msg = byId.get(id);
+                if (msg != null) {
+                    ordered.add(msg);
+                }
+            }
+            return ordered;
+        }
+
+        List<Message> messages = messageRepository.findByConversationIdOrderBySentAtAsc(convo.getId());
+        if (!messages.isEmpty()) {
+            convo.setMessageIds(messages.stream().map(Message::getId).toList());
+            conversationRepository.save(convo);
+        }
+        return messages;
     }
 
     private ConversationResponse toConversationResponse(Conversation convo, String currentUserId) {

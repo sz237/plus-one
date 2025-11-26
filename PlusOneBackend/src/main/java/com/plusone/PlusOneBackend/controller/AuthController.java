@@ -4,6 +4,7 @@ import com.plusone.PlusOneBackend.dto.AuthResponse;
 import com.plusone.PlusOneBackend.dto.LoginRequest;
 import com.plusone.PlusOneBackend.dto.SignupRequest;
 import com.plusone.PlusOneBackend.service.AuthService;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -21,8 +22,8 @@ public class AuthController {
      * Register a new user with Vanderbilt email
      */
     @PostMapping("/signup")
-    public ResponseEntity<AuthResponse> signup(@RequestBody SignupRequest request) {
-        AuthResponse response = authService.signup(request);
+    public ResponseEntity<AuthResponse> signup(@RequestBody SignupRequest request, HttpServletResponse httpResponse) {
+        AuthResponse response = authService.signup(request, httpResponse);
         
         // Check if signup was successful
         if (response.getMessage().equals("Signup successful")) {
@@ -37,8 +38,8 @@ public class AuthController {
      * Login existing user
      */
     @PostMapping("/login")
-    public ResponseEntity<AuthResponse> login(@RequestBody LoginRequest request) {
-        AuthResponse response = authService.login(request);
+    public ResponseEntity<AuthResponse> login(@RequestBody LoginRequest request, HttpServletResponse httpResponse) {
+        AuthResponse response = authService.login(request, httpResponse);
         
         // Check if login was successful
         if (response.getMessage().equals("Login successful")) {
@@ -71,4 +72,3 @@ public class AuthController {
         }
     }
 }
-

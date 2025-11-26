@@ -5,6 +5,7 @@ import com.plusone.PlusOneBackend.dto.LoginRequest;
 import com.plusone.PlusOneBackend.dto.SignupRequest;
 import com.plusone.PlusOneBackend.model.User;
 import com.plusone.PlusOneBackend.repository.UserRepository;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -20,12 +21,15 @@ public class AuthService {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
+    @Autowired
+    private JwtService jwtService;
+
     private static final String VANDERBILT_EMAIL_DOMAIN = "@vanderbilt.edu";
 
     /**
      * Register a new user with Vanderbilt email
      */
-    public AuthResponse signup(SignupRequest request) {
+    public AuthResponse signup(SignupRequest request, HttpServletResponse response) {
         try {
             // Validate Vanderbilt email
             if (!isVanderbiltEmail(request.getEmail())) {
@@ -65,6 +69,9 @@ public class AuthService {
             // Save to database
             User savedUser = userRepository.save(newUser);
 
+            String token = jwtService.generateToken(savedUser);
+            jwtService.addJwtCookie(response, token);
+
             // Return success response
             return new AuthResponse(
                 "Signup successful",
@@ -82,7 +89,7 @@ public class AuthService {
     /**
      * Login existing user
      */
-    public AuthResponse login(LoginRequest request) {
+    public AuthResponse login(LoginRequest request, HttpServletResponse response) {
         try {
             // Find user by email
             Optional<User> userOptional = userRepository.findByEmail(request.getEmail().toLowerCase().trim());
@@ -97,6 +104,9 @@ public class AuthService {
             if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
                 return new AuthResponse("Invalid email or password");
             }
+
+            String token = jwtService.generateToken(user);
+            jwtService.addJwtCookie(response, token);
 
             // Return success response
             return new AuthResponse(
@@ -119,5 +129,3 @@ public class AuthService {
         return email != null && email.toLowerCase().trim().endsWith(VANDERBILT_EMAIL_DOMAIN);
     }
 }
-
-
