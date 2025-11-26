@@ -19,6 +19,7 @@ export interface AuthResponse {
   email?: string;
   firstName?: string;
   lastName?: string;
+   token?: string;
 }
 
 // API functions
@@ -70,4 +71,3 @@ export const authService = {
 export const isVanderbiltEmail = (email: string): boolean => {
   return email.toLowerCase().trim().endsWith('@vanderbilt.edu');
 };
-

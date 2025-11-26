@@ -13,11 +13,11 @@ public class AuthResponse {
     private String email;
     private String firstName;
     private String lastName;
+    private String token;
     
     // Constructor for error messages
     public AuthResponse(String message) {
         this.message = message;
     }
 }
-
 

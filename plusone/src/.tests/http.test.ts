@@ -12,7 +12,22 @@
 import type { AxiosInstance } from 'axios';
 
 // Mock axios to capture create options
-const createSpy = jest.fn(() => ({ /* minimal AxiosInstance stub */ })) as unknown as jest.Mock<AxiosInstance>;
+let capturedRequestInterceptor: ((config: any) => any) | undefined;
+const mockInterceptors = {
+  request: {
+    use: jest.fn((fn: (config: any) => any) => {
+      capturedRequestInterceptor = fn;
+      return fn;
+    }),
+  },
+};
+
+const createSpy = jest.fn(
+  () =>
+    ({
+      interceptors: mockInterceptors,
+    }) as unknown as AxiosInstance
+) as unknown as jest.Mock<AxiosInstance>;
 jest.mock('axios', () => ({
   __esModule: true,
   default: { create: createSpy },
@@ -35,7 +50,10 @@ const resetEnv = () => {
 describe('services/http.ts', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    capturedRequestInterceptor = undefined;
+    mockInterceptors.request.use.mockClear();
     resetEnv();
+    localStorage.clear();
   });
 
   test('uses Vite import.meta.env.VITE_API_BASE_URL when present', () => {
@@ -92,5 +110,14 @@ describe('services/http.ts', () => {
     const opts = createSpy.mock.calls[0][0];
     expect(opts.withCredentials).toBe(true);
     expect(opts.headers).toEqual({ 'Content-Type': 'application/json' });
+  });
+
+  test('adds Authorization header when auth token is stored', () => {
+    const { AUTH_TOKEN_KEY } = loadHttpModule();
+    expect(mockInterceptors.request.use).toHaveBeenCalledTimes(1);
+    localStorage.setItem(AUTH_TOKEN_KEY, 'jwt-123');
+
+    const cfg = capturedRequestInterceptor?.({ headers: {} }) ?? {};
+    expect(cfg.headers?.Authorization).toBe('Bearer jwt-123');
   });
 });

@@ -13,7 +13,9 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
+import org.springframework.http.HttpHeaders;
 import org.springframework.web.filter.OncePerRequestFilter;
+import org.springframework.util.StringUtils;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -45,8 +47,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return;
         }
 
-        String token = readJwtCookie(request);
-        if (token == null) {
+        String token = resolveToken(request);
+        if (!StringUtils.hasText(token)) {
             unauthorized(response, "Unauthorized - No token provided");
             return;
         }
@@ -68,6 +70,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         } catch (IllegalArgumentException ex) {
             unauthorized(response, "Unauthorized - Invalid token");
         }
+    }
+
+    private String resolveToken(HttpServletRequest request) {
+        String header = request.getHeader(HttpHeaders.AUTHORIZATION);
+        if (StringUtils.hasText(header) && header.startsWith("Bearer ")) {
+            return header.substring(7);
+        }
+        return readJwtCookie(request);
     }
 
     private String readJwtCookie(HttpServletRequest request) {

@@ -2,6 +2,7 @@ import { useState } from "react";
 import type { FormEvent } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { authService, isVanderbiltEmail } from "../services/authService";
+import { AUTH_TOKEN_KEY } from "../services/http";
 
 export default function Signup() {
   const navigate = useNavigate();
@@ -77,6 +78,11 @@ export default function Signup() {
       });
 
       if (response.message === "Signup successful") {
+        if (response.token) {
+          localStorage.setItem(AUTH_TOKEN_KEY, response.token);
+        } else {
+          localStorage.removeItem(AUTH_TOKEN_KEY);
+        }
         // Store user info in localStorage (simple approach for now)
         localStorage.setItem(
           "user",

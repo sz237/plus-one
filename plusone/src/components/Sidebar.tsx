@@ -1,4 +1,5 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { AUTH_TOKEN_KEY } from "../services/http";
 
 type SidebarProps = {
   isOpen: boolean;
@@ -18,6 +19,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
 
   const handleLogout = () => {
     localStorage.removeItem("user");
+    localStorage.removeItem(AUTH_TOKEN_KEY);
     onClose();
     navigate("/login");
   };

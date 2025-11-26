@@ -17,8 +17,30 @@ export const API_BASE_URL =
   (nodeBaseUrl as string | undefined) ||
   "http://localhost:8080/api";
 
+export const AUTH_TOKEN_KEY = "authToken";
+
 export const api = axios.create({
   baseURL: API_BASE_URL,
   withCredentials: true,
   headers: { "Content-Type": "application/json" },
+});
+
+const readToken = () => {
+  if (typeof window === "undefined") return null;
+  try {
+    return localStorage.getItem(AUTH_TOKEN_KEY);
+  } catch {
+    return null;
+  }
+};
+
+api.interceptors.request.use((config) => {
+  const token = readToken();
+  if (token) {
+    config.headers = {
+      ...config.headers,
+      Authorization: `Bearer ${token}`,
+    };
+  }
+  return config;
 });

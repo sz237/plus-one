@@ -78,7 +78,8 @@ public class AuthService {
                 savedUser.getId(),
                 savedUser.getEmail(),
                 savedUser.getFirstName(),
-                savedUser.getLastName()
+                savedUser.getLastName(),
+                token
             );
 
         } catch (Exception e) {
@@ -114,7 +115,8 @@ public class AuthService {
                 user.getId(),
                 user.getEmail(),
                 user.getFirstName(),
-                user.getLastName()
+                user.getLastName(),
+                token
             );
 
         } catch (Exception e) {
