@@ -3,6 +3,7 @@ package com.plusone.PlusOneBackend.model;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
+import java.util.ArrayList;
 
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
@@ -51,6 +52,9 @@ public class User {
     @Builder.Default
     private Onboarding onboarding = new Onboarding(false, 1, null);
 
+    @Builder.Default
+    private List<String> bookmarkedPostIds = new ArrayList<>();
+
     // Constructor without ID (for new users)
     public User(String email, String password, String firstName, String lastName) {
         this.email = email;
@@ -95,6 +99,14 @@ public class User {
 
     public void setNumRequests(int numRequests) {
         ensureProfile().setNumRequests(numRequests);
+    }
+
+    public List<String> getBookmarkedPostIds() {
+        return bookmarkedPostIds;
+    }
+
+    public void setBookmarkedPostIds(List<String> bookmarkedPostIds) {
+        this.bookmarkedPostIds = bookmarkedPostIds;
     }
 
     private Profile ensureProfile() {

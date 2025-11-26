@@ -85,5 +85,15 @@ public class Profile {
 
     @Builder.Default
     private int numRequests = 0;
+
+    private Boolean lookingForRoommate;
+
+    public Boolean getLookingForRoommate() {
+        return lookingForRoommate;
+    }
+
+    public void setLookingForRoommate(Boolean lookingForRoommate) {
+        this.lookingForRoommate = lookingForRoommate;
+    }
 }
 

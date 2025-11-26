@@ -23,6 +23,7 @@ export default function MyPage() {
     };
   } | null>(null);
   const [posts, setPosts] = useState<Post[]>([]);
+  const [bookmarkedPosts, setBookmarkedPosts] = useState<Post[]>([]);
   const [connectionRequests, setConnectionRequests] = useState<ConnectionRequest[]>([]);
   const [requestsLoading, setRequestsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -36,6 +37,16 @@ export default function MyPage() {
       return null;
     }
   }, []);
+
+  const loadBookmarkedPosts = async () => {
+  if (!user?.userId) return;
+  try {
+    const bookmarked = await postService.getBookmarkedPosts(user.userId);
+    setBookmarkedPosts(bookmarked);
+  } catch (error) {
+    console.error("Failed to load bookmarked posts:", error);
+  }
+};
 
   useEffect(() => {
     if (!user?.userId) return;
@@ -57,6 +68,8 @@ export default function MyPage() {
         
         // Load connection requests
         loadConnectionRequests();
+
+        loadBookmarkedPosts();
       } catch (error) {
         console.error('Failed to load profile:', error);
         setError('Failed to load profile. Please try again.');
@@ -89,6 +102,18 @@ export default function MyPage() {
   const onEdit = (p: Post) => {
     navigate("/MakePost", { state: { post: p } }); // we'll reuse MakeAPost for editing
   };
+
+  const handleUnbookmark = async (postId: string) => {
+  if (!user?.userId) return;
+
+  try {
+    await postService.unbookmarkPost(user.userId, postId);
+    setBookmarkedPosts((prev) => prev.filter((p) => p.id !== postId));
+  } catch (err) {
+    console.error("Failed to unbookmark:", err);
+    alert("Failed to unbookmark. Please try again.");
+  }
+};
 
   const handleAcceptRequest = async (requestId: string) => {
     if (!user?.userId) return;
@@ -351,6 +376,58 @@ export default function MyPage() {
                 </button>
               </div>
             </div>
+            {/* Bookmarked Posts */}
+<h3 className="h5 fw-bold mb-3 mt-4">Bookmarked Posts</h3>
+<div className="row g-3">
+  {bookmarkedPosts.length === 0 ? (
+    <div className="col-12">
+      <p className="text-muted small mb-0">
+        You haven&apos;t bookmarked any posts yet.
+      </p>
+    </div>
+  ) : (
+    bookmarkedPosts.map((p) => (
+      <div key={p.id} className="col-12 col-md-4">
+        <div className="p-2 border border-2" style={{ borderColor: "#000" }}>
+          <div className="d-flex justify-content-end mt-2">
+  <button
+    className="btn btn-link p-0"
+    title="Remove bookmark"
+    onClick={() => handleUnbookmark(p.id!)}
+  >
+    <span style={{ fontSize: 20, color: "#000" }}>★</span>
+  </button>
+</div>
+          <div className="d-flex justify-content-between small">
+            <span className="text-muted">
+              {p.category}
+              {p.category === "Events" && p.eventDate ? ` • ${p.eventDate}` : ""}
+            </span>
+            <span className="text-muted">{timeAgo(p.createdAt)}</span>
+          </div>
+          <hr className="my-1" />
+          <hr className="mt-0 mb-2" />
+          <div className="fw-bold">{p.title}</div>
+          <div className="d-flex gap-2 mt-2">
+            {p.imageUrl ? (
+              <img
+                src={p.imageUrl}
+                alt={p.title}
+                style={{
+                  width: 90,
+                  height: 60,
+                  objectFit: "cover",
+                  border: "1px solid #000",
+                }}
+              />
+            ) : null}
+            <p className="small mb-0">{p.description}</p>
+          </div>
+        </div>
+      </div>
+    ))
+  )}
+</div>
           </>
         )}
       </main>

@@ -125,6 +125,7 @@ public class ProfileService {
             sanitized.setNumRequests(0);
         }
 
+        // lookingForRoommate is just passed through as-is; no special handling needed
         return sanitized;
     }
 
@@ -156,7 +157,6 @@ public class ProfileService {
     private int getConnectionsCount(String userId) {
         try {
             // Count ACCEPTED connection requests from connection_requests collection
-            // This is more reliable than counting from the connections collection
             int count = connectionRequestRepository.countAcceptedConnectionsForUser(userId);
             logger.debug("Connections count for user {} (from ACCEPTED requests): {}", userId, count);
             return count;
@@ -184,7 +184,12 @@ public class ProfileService {
         }
     }
 
-    private ProfileResponse buildProfileResponse(User user, int connectionsCount, int requestsCount, List<Post> posts) {
+    private ProfileResponse buildProfileResponse(
+            User user,
+            int connectionsCount,
+            int requestsCount,
+            List<Post> posts
+    ) {
         Profile profile = user.getProfile() != null ? user.getProfile() : new Profile();
         User.Onboarding onboarding = user.getOnboarding();
         if (onboarding == null) {
@@ -192,19 +197,21 @@ public class ProfileService {
         }
 
         return ProfileResponse.builder()
-            .userId(user.getId())
-            .firstName(user.getFirstName())
-            .lastName(user.getLastName())
-            .connectionsCount(connectionsCount)
-            .requestsCount(requestsCount)
-            .postsCount(posts != null ? posts.size() : 0)
-            .posts(posts != null ? posts : new ArrayList<>())
-            .profile(profile)
-            .onboarding(ProfileResponse.OnboardingData.builder()
-                .completed(onboarding.isCompleted())
-                .step(onboarding.getStep() != null ? onboarding.getStep() : DEFAULT_ONBOARDING_STEP)
-                .completedAt(onboarding.getCompletedAt() != null ? onboarding.getCompletedAt().toString() : null)
-                .build())
-            .build();
+                .userId(user.getId())
+                .firstName(user.getFirstName())
+                .lastName(user.getLastName())
+                .connectionsCount(connectionsCount)
+                .requestsCount(requestsCount)
+                .postsCount(posts != null ? posts.size() : 0)
+                .posts(posts != null ? posts : new ArrayList<>())
+                .profile(profile)
+                .onboarding(ProfileResponse.OnboardingData.builder()
+                        .completed(onboarding.isCompleted())
+                        .step(onboarding.getStep() != null ? onboarding.getStep() : DEFAULT_ONBOARDING_STEP)
+                        .completedAt(onboarding.getCompletedAt() != null
+                                ? onboarding.getCompletedAt().toString()
+                                : null)
+                        .build())
+                .build();
     }
 }
