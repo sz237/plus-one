@@ -41,6 +41,7 @@ export interface Profile {
   location: Location;
   job: Job;
   interests: string[];
+  lookingForRoommate?: boolean | null;
   profilePhoto: Photo;
   numConnections: number;
   numRequests: number;
@@ -62,6 +63,7 @@ export interface ProfileResponse {
   posts: Post[];
   profile: Profile;
   onboarding: Onboarding;
+  bookmarkedPosts?: Post[];
 }
 
 export interface ProfileUpdatePayload {

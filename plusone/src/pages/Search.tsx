@@ -1,6 +1,7 @@
 import PageTemplate from "../components/PageTemplate";
-import { useState } from "react"; // store user enteried search query
 import { API_BASE_URL } from "../services/http"; // shared base URL from env/default
+import { postService } from "../services/postService";
+import { useMemo, useState } from "react";
 
 // Types
 // User type
@@ -32,6 +33,13 @@ type Post = {
   createdAt?: string;
 };
 
+type StoredUser = {
+  userId: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+};
+
 // Current search tab - what are we searching for?
 type Target = "users" | "events" | "jobs" | "internships" | "housing" | "other";
 
@@ -55,6 +63,15 @@ export default function Search() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [hasSearched, setHasSearched] = useState(false); // <-- track if a search ran
+
+  // current logged-in user (from localStorage)
+  const user = useMemo<StoredUser | null>(() => {
+    try {
+      return JSON.parse(localStorage.getItem("user") || "null");
+    } catch {
+      return null;
+    }
+  }, []);
 
   const categoryMap: Record<Exclude<Target, "users">, Post["category"]> = {
     events: "EVENTS",
@@ -124,6 +141,21 @@ export default function Search() {
   const total = target === "users" ? userResults.length : postResults.length;
 
   const showEmpty = hasSearched && !loading && !error && total === 0;
+
+  const handleBookmark = async (postId: string) => {
+    if (!user?.userId) {
+      alert("Please log in to bookmark posts.");
+      return;
+    }
+    try {
+      await postService.bookmarkPost(user.userId, postId);
+      alert("Post bookmarked! You can see it on your My Page.");
+    } catch (err) {
+      console.error("Failed to bookmark post", err);
+      alert("Failed to bookmark post. Please try again.");
+    }
+  };
+
 
   return (
     <PageTemplate title="Search">
@@ -311,7 +343,7 @@ export default function Search() {
                     )}
                     {blurb && (
                       <p
-                        className="mt-2 mb-0"
+                        className="mt-2 mb-2"
                         style={{
                           display: "-webkit-box",
                           WebkitLineClamp: 3,
@@ -322,6 +354,14 @@ export default function Search() {
                         {blurb}
                       </p>
                     )}
+
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-outline-dark mt-1"
+                      onClick={() => handleBookmark(p.id)}
+                    >
+                      ★ Bookmark
+                    </button>
                   </div>
                 </div>
               </div>

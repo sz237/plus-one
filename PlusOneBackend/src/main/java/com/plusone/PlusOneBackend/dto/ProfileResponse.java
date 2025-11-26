@@ -24,6 +24,7 @@ public class ProfileResponse {
     private List<Post> posts;
     private Profile profile;
     private OnboardingData onboarding;
+    private List<Post> bookmarkedPosts;
     
     @Data
     @NoArgsConstructor

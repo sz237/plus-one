@@ -5,6 +5,9 @@ import com.plusone.PlusOneBackend.repository.PostRepository;
 import com.plusone.PlusOneBackend.service.PostAuthorService;
 import com.plusone.PlusOneBackend.service.PostSearchService;
 import org.springframework.web.bind.annotation.*;
+import com.plusone.PlusOneBackend.service.PostService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 
 import java.time.*;
 import java.util.Date;
@@ -19,6 +22,9 @@ public class PostController {
   private final PostRepository repo;
   private final PostSearchService postSearchService;
   private final PostAuthorService postAuthorService;
+
+  @Autowired
+  private PostService postService;
 
   public PostController(PostRepository repo,
                         PostSearchService postSearchService,
@@ -82,4 +88,27 @@ public class PostController {
       p.setExpiresAt(null);
     }
   }
+
+  @PostMapping("/{postId}/bookmark")
+public ResponseEntity<Void> bookmarkPost(
+        @PathVariable String postId,
+        @RequestParam String userId
+) {
+    postService.bookmarkPost(userId, postId);
+    return ResponseEntity.ok().build();
+}
+
+@DeleteMapping("/{postId}/bookmark")
+public ResponseEntity<Void> unbookmarkPost(
+        @PathVariable String postId,
+        @RequestParam String userId
+) {
+    postService.unbookmarkPost(userId, postId);
+    return ResponseEntity.noContent().build();
+}
+
+@GetMapping("/bookmarked")
+public List<Post> getBookmarkedPosts(@RequestParam String userId) {
+    return postService.getBookmarkedPosts(userId);
+}
 }

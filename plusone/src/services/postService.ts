@@ -22,4 +22,23 @@ export const postService = {
   async remove(id: string): Promise<void> {
     await api.delete(`/posts/${id}`);
   },
+  
+  async getBookmarkedPosts(userId: string): Promise<Post[]> {
+  const { data } = await api.get<Post[]>("/posts/bookmarked", {
+    params: { userId },
+  });
+  return data;
+},
+
+  async bookmarkPost(userId: string, postId: string): Promise<void> {
+    await api.post(`/posts/${postId}/bookmark`, null, {
+      params: { userId },
+    });
+  },
+
+  async unbookmarkPost(userId: string, postId: string): Promise<void> {
+    await api.delete(`/posts/${postId}/bookmark`, {
+      params: { userId },
+    });
+  },
 };

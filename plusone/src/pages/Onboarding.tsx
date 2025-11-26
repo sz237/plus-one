@@ -13,7 +13,7 @@ type StoredUser = {
   lastName: string;
 };
 
-const DEFAULT_AVATAR =
+export const DEFAULT_AVATAR =
   "https://avatars.dicebear.com/api/initials/PlusOne.svg?scale=110&background=%23f5f5f5";
 
 const STEP_META = [
@@ -71,6 +71,7 @@ const defaultProfile: Profile = {
     companyId: "",
   },
   interests: [],
+  lookingForRoommate: null,
   profilePhoto: {
     storage: "stock",
     key: "default",
@@ -253,6 +254,7 @@ export default function Onboarding() {
                   {step === 3 ? (
                     <InterestsStep
                       profile={profile}
+                      setProfile={setProfile}
                       toggleInterest={toggleInterest}
                       customInterest={customInterest}
                       setCustomInterest={setCustomInterest}
@@ -337,7 +339,7 @@ type DemographicsProps = {
   setProfile: React.Dispatch<React.SetStateAction<Profile>>;
 };
 
-function DemographicsStep({ profile, setProfile }: DemographicsProps) {
+export function DemographicsStep({ profile, setProfile }: DemographicsProps) {
   const onGenderChange = (value: string) => {
     setProfile((prev) => ({
       ...prev,
@@ -482,7 +484,7 @@ type CareerProps = {
   setProfile: React.Dispatch<React.SetStateAction<Profile>>;
 };
 
-function CareerStep({ profile, setProfile }: CareerProps) {
+export function CareerStep({ profile, setProfile }: CareerProps) {
   const onTitleChange = (value: string) => {
     setProfile((prev) => ({
       ...prev,
@@ -569,14 +571,16 @@ function CareerStep({ profile, setProfile }: CareerProps) {
 
 type InterestsProps = {
   profile: Profile;
+  setProfile: React.Dispatch<React.SetStateAction<Profile>>;
   toggleInterest: (interest: string) => void;
   customInterest: string;
   setCustomInterest: (value: string) => void;
   addCustomInterest: () => void;
 };
 
-function InterestsStep({
+export function InterestsStep({
   profile,
+  setProfile,
   toggleInterest,
   customInterest,
   setCustomInterest,
@@ -624,11 +628,55 @@ function InterestsStep({
         </div>
       </div>
 
+      <div className="mt-4">
+  <label className="form-label fw-semibold">Looking for a roommate?</label>
+  <div className="d-flex gap-3">
+    <div className="form-check">
+      <input
+        type="radio"
+        className="form-check-input"
+        name="roommate"
+        id="roommate-yes"
+        checked={profile.lookingForRoommate === true}
+        onChange={() =>
+          setProfile(prev => ({
+            ...prev,
+            lookingForRoommate: true,
+          }))
+        }
+      />
+      <label htmlFor="roommate-yes" className="form-check-label">
+        Yes
+      </label>
+    </div>
+
+    <div className="form-check">
+      <input
+        type="radio"
+        className="form-check-input"
+        name="roommate"
+        id="roommate-no"
+        checked={profile.lookingForRoommate === false}
+        onChange={() =>
+          setProfile(prev => ({
+            ...prev,
+            lookingForRoommate: false,
+          }))
+        }
+      />
+      <label htmlFor="roommate-no" className="form-check-label">
+        No
+      </label>
+    </div>
+  </div>
+</div>
+
       {profile.interests.length ? (
         <div className="small text-muted">
           Selected: {profile.interests.join(", ")}
         </div>
       ) : null}
+
     </div>
   );
 }
@@ -640,7 +688,7 @@ type PhotoProps = {
   resetToDefault: () => void;
 };
 
-function PhotoStep({ photoPreview, profile, handleUpload, resetToDefault }: PhotoProps) {
+export function PhotoStep({ photoPreview, profile, handleUpload, resetToDefault }: PhotoProps) {
   return (
     <div className="vstack gap-4">
       <div className="text-center">
@@ -746,7 +794,7 @@ function StepFooter({
   );
 }
 
-function normalizeProfile(profile?: Profile | null): Profile {
+export function normalizeProfile(profile?: Profile | null): Profile {
   if (!profile) return defaultProfile;
   return {
     gender: profile.gender ?? null,
@@ -764,6 +812,7 @@ function normalizeProfile(profile?: Profile | null): Profile {
       companyId: profile.job?.companyId ?? "",
     },
     interests: profile.interests ?? [],
+    lookingForRoommate: profile.lookingForRoommate ?? null,
     profilePhoto: {
       storage: profile.profilePhoto?.storage ?? "stock",
       key: profile.profilePhoto?.key ?? "default",
@@ -774,7 +823,7 @@ function normalizeProfile(profile?: Profile | null): Profile {
   };
 }
 
-function normalizeProfileForRequest(profile: Profile): Profile {
+export function normalizeProfileForRequest(profile: Profile): Profile {
   return {
     ...profile,
     location: {
@@ -790,6 +839,7 @@ function normalizeProfileForRequest(profile: Profile): Profile {
       companyId: profile.job.companyId?.toString().trim() ?? "",
     },
     interests: profile.interests,
+    lookingForRoommate: profile.lookingForRoommate ?? null,
     profilePhoto: {
       ...profile.profilePhoto,
       url: profile.profilePhoto?.url || DEFAULT_AVATAR,

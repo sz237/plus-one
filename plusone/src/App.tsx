@@ -8,6 +8,7 @@ import MyPage from "./pages/MyPage";
 import MakePost from "./pages/MakePost";
 import Messages from "./pages/Messages";
 import Search from "./pages/Search";
+import EditProfile from "./pages/EditProfile";
 import "./App.css";
 
 export default function App() {
@@ -24,6 +25,7 @@ export default function App() {
 
       <Route path="/messages" element={<Messages />} />
       <Route path="/search" element={<Search />} />
+      <Route path="/edit-profile" element={<EditProfile />} />
       
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
