@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
-import { postService } from "../services/postService";
+import { postService, type AttendeeSummary } from "../services/postService";
 import { connectionService } from "../services/connectionService";
 import type { Post } from "../types/post";
 import type { ConnectionRequest } from "../types/connection";
@@ -27,6 +27,13 @@ export default function MyPage() {
   const [connectionRequests, setConnectionRequests] = useState<ConnectionRequest[]>([]);
   const [requestsLoading, setRequestsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [guestListModal, setGuestListModal] = useState<{
+    open: boolean;
+    loading: boolean;
+    attendees: AttendeeSummary[];
+    error: string;
+    postTitle: string;
+  }>({ open: false, loading: false, attendees: [], error: "", postTitle: "" });
 
   const navigate = useNavigate();
 
@@ -158,6 +165,22 @@ export default function MyPage() {
     } catch (error) {
       console.error('Failed to reload profile:', error);
     }
+  };
+
+  const openGuestList = async (post: Post) => {
+    if (!user?.userId || !post.id) return;
+    setGuestListModal({ open: true, loading: true, attendees: [], error: "", postTitle: post.title });
+    try {
+      const attendees = await postService.getRsvps(post.id, user.userId);
+      setGuestListModal((prev) => ({ ...prev, loading: false, attendees }));
+    } catch (err: any) {
+      const message = err?.response?.data?.error || err?.message || "Unable to load guest list.";
+      setGuestListModal((prev) => ({ ...prev, loading: false, error: message }));
+    }
+  };
+
+  const closeGuestList = () => {
+    setGuestListModal({ open: false, loading: false, attendees: [], error: "", postTitle: "" });
   };
 
   if (!user?.userId) {
@@ -343,21 +366,38 @@ export default function MyPage() {
                       <p className="small mb-0">{p.description}</p>
                     </div>
 
-                    <div className="d-flex justify-content-end align-items-center gap-3 mt-2">
-                      <button
-                        className="btn btn-link p-0"
-                        onClick={() => onEdit(p)}
-                        title="Edit"
-                      >
-                        <span style={{ fontSize: 20, color: "#000" }}>🖉</span>
-                      </button>
-                      <button
-                        className="btn btn-link p-0"
-                        onClick={() => onDelete(p.id)}
-                        title="Delete"
-                      >
-                        <span style={{ fontSize: 20, color: "#000" }}>🗑️</span>
-                      </button>
+                    <div className="d-flex justify-content-between align-items-center gap-3 mt-3">
+                      {p.category === "Events" ? (
+                        <button
+                          className="btn btn-outline-dark btn-sm"
+                          onClick={() => openGuestList(p)}
+                          style={{ minWidth: 120 }}
+                        >
+                          Guest list
+                          {(() => {
+                            const count = p.rsvpCount ?? p.rsvpUserIds?.length ?? 0;
+                            return count ? ` (${count})` : "";
+                          })()}
+                        </button>
+                      ) : (
+                        <span />
+                      )}
+                      <div className="d-flex justify-content-end align-items-center gap-3">
+                        <button
+                          className="btn btn-link p-0"
+                          onClick={() => onEdit(p)}
+                          title="Edit"
+                        >
+                          <span style={{ fontSize: 20, color: "#000" }}>🖉</span>
+                        </button>
+                        <button
+                          className="btn btn-link p-0"
+                          onClick={() => onDelete(p.id)}
+                          title="Delete"
+                        >
+                          <span style={{ fontSize: 20, color: "#000" }}>🗑️</span>
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -431,6 +471,57 @@ export default function MyPage() {
           </>
         )}
       </main>
+
+      {guestListModal.open && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="d-flex align-items-center justify-content-center"
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.45)",
+            zIndex: 1050,
+            padding: "16px",
+          }}
+        >
+          <div
+            className="bg-white border border-2"
+            style={{ borderColor: "#000", maxWidth: 480, width: "100%", borderRadius: 8 }}
+          >
+            <div className="d-flex justify-content-between align-items-center px-3 py-2 border-bottom">
+              <div>
+                <div className="fw-bold">Guest list</div>
+                <div className="small text-muted">{guestListModal.postTitle}</div>
+              </div>
+              <button className="btn btn-sm btn-outline-dark" onClick={closeGuestList}>
+                Close
+              </button>
+            </div>
+
+            <div className="p-3" style={{ maxHeight: "60vh", overflowY: "auto" }}>
+              {guestListModal.loading ? (
+                <div className="text-center text-muted">Loading attendees…</div>
+              ) : guestListModal.error ? (
+                <div className="alert alert-danger mb-0">{guestListModal.error}</div>
+              ) : guestListModal.attendees.length === 0 ? (
+                <div className="text-muted">No RSVPs yet.</div>
+              ) : (
+                <ul className="list-unstyled mb-0">
+                  {guestListModal.attendees.map((a) => (
+                    <li key={a.id} className="py-2 border-bottom">
+                      <div className="fw-semibold">
+                        {a.firstName} {a.lastName}
+                      </div>
+                      <div className="small text-muted">RSVP’d</div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -8,6 +8,8 @@ import org.springframework.data.mongodb.core.mapping.Document;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Date;
+import java.util.ArrayList;
+import java.util.List;
 
 @Document("posts")
 public class Post {
@@ -25,6 +27,11 @@ public class Post {
   private LocalDate eventDate;
 
   private Date expiresAt;
+
+  /**
+   * User IDs that have RSVP'd to this post (only meaningful for Events category).
+   */
+  private List<String> rsvpUserIds = new ArrayList<>();
 
   @Transient
   private AuthorSummary author;
@@ -117,6 +124,22 @@ public class Post {
 
   public void setExpiresAt(Date expiresAt) {
     this.expiresAt = expiresAt;
+  }
+
+  public List<String> getRsvpUserIds() {
+    if (rsvpUserIds == null) {
+      rsvpUserIds = new ArrayList<>();
+    }
+    return rsvpUserIds;
+  }
+
+  public void setRsvpUserIds(List<String> rsvpUserIds) {
+    this.rsvpUserIds = (rsvpUserIds != null) ? rsvpUserIds : new ArrayList<>();
+  }
+
+  @JsonProperty("rsvpCount")
+  public int getRsvpCount() {
+    return getRsvpUserIds().size();
   }
 
   public AuthorSummary getAuthor() {
