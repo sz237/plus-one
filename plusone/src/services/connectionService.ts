@@ -59,6 +59,14 @@ export const connectionService = {
     return data;
   },
 
+  // Get users in the same city as the current user (excluding self/friends/pending)
+  async getSameCityUsers(currentUserId: string): Promise<UserProfile[]> {
+    const { data } = await api.get<UserProfile[]>("/connections/same-city", {
+      params: { currentUserId },
+    });
+    return data;
+  },
+
   // Create a connection request
   async createConnectionRequest(fromUserId: string, request: CreateConnectionRequest): Promise<ConnectionRequest> {
     const { data } = await api.post<ConnectionRequest>("/connections/request", request, {
