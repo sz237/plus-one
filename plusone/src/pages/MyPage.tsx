@@ -343,7 +343,7 @@ export default function MyPage() {
                     <div className="d-flex justify-content-between small">
                       <span className="text-muted">
                         {p.category}
-                        {p.category === "Events" && p.eventDate ? ` • ${p.eventDate}` : ""}
+                        {p.category === "Events" && p.eventDate ? ` • ${formatEventDateTime(p.eventDate, p.eventTime)}` : ""}
                       </span>
                       <span className="text-muted">{timeAgo(p.createdAt)}</span>
                     </div>
@@ -441,7 +441,7 @@ export default function MyPage() {
           <div className="d-flex justify-content-between small">
             <span className="text-muted">
               {p.category}
-              {p.category === "Events" && p.eventDate ? ` • ${p.eventDate}` : ""}
+              {p.category === "Events" && p.eventDate ? ` • ${formatEventDateTime(p.eventDate, p.eventTime)}` : ""}
             </span>
             <span className="text-muted">{timeAgo(p.createdAt)}</span>
           </div>
@@ -534,4 +534,10 @@ function timeAgo(iso?: string) {
   if (h < 24) return `${h} hours ago`;
   const dys = Math.floor(h / 24);
   return `${dys} days ago`;
+}
+
+function formatEventDateTime(date?: string | null, time?: string | null) {
+  if (!date) return "";
+  const displayTime = time ? time.slice(0, 5) : "";
+  return displayTime ? `${date} @ ${displayTime}` : date;
 }

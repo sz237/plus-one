@@ -83,10 +83,15 @@ public class PostController {
         && p.getCategory().equalsIgnoreCase("Events");
 
     if (isEvent && p.getEventDate() != null) {
-      ZonedDateTime endOfDay = p.getEventDate()
-          .atTime(LocalTime.MAX)
+      ZonedDateTime start = p.getEventDate()
+          .atTime(p.getEventTime() != null ? p.getEventTime() : LocalTime.of(23, 59, 59))
           .atZone(ZONE_CHICAGO);
-      p.setExpiresAt(Date.from(endOfDay.toInstant()));
+
+      ZonedDateTime expires = p.getEventTime() != null
+          ? start.plusHours(1) // expire at end of event window (1 hour default)
+          : start; // if no time provided, treat as end-of-day
+
+      p.setExpiresAt(Date.from(expires.toInstant()));
     } else {
       p.setExpiresAt(null);
     }

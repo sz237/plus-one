@@ -1,12 +1,14 @@
 package com.plusone.PlusOneBackend.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.Transient;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.Date;
 import java.util.ArrayList;
 import java.util.List;
@@ -25,6 +27,8 @@ public class Post {
   private Instant createdAt = Instant.now();
 
   private LocalDate eventDate;
+  @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "HH:mm[:ss]")
+  private LocalTime eventTime;
 
   private Date expiresAt;
 
@@ -124,6 +128,14 @@ public class Post {
 
   public void setExpiresAt(Date expiresAt) {
     this.expiresAt = expiresAt;
+  }
+
+  public LocalTime getEventTime() {
+    return eventTime;
+  }
+
+  public void setEventTime(LocalTime eventTime) {
+    this.eventTime = eventTime;
   }
 
   public List<String> getRsvpUserIds() {
