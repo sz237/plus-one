@@ -7,11 +7,14 @@ import com.plusone.PlusOneBackend.service.PostSearchService;
 import org.springframework.web.bind.annotation.*;
 import com.plusone.PlusOneBackend.service.PostService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
 import java.time.*;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/posts")
@@ -76,39 +79,92 @@ public class PostController {
   }
 
   private void applyExpiry(Post p) {
-    if (p.getCategory() != null
-        && p.getCategory().equalsIgnoreCase("Events")
-        && p.getEventDate() != null) {
+    boolean isEvent = p.getCategory() != null
+        && p.getCategory().equalsIgnoreCase("Events");
 
-      ZonedDateTime endOfDay = p.getEventDate()
-          .atTime(LocalTime.MAX)
+    if (isEvent && p.getEventDate() != null) {
+      ZonedDateTime start = p.getEventDate()
+          .atTime(p.getEventTime() != null ? p.getEventTime() : LocalTime.of(23, 59, 59))
           .atZone(ZONE_CHICAGO);
-      p.setExpiresAt(Date.from(endOfDay.toInstant()));
+
+      ZonedDateTime expires = p.getEventTime() != null
+          ? start.plusHours(1) // expire at end of event window (1 hour default)
+          : start; // if no time provided, treat as end-of-day
+
+      p.setExpiresAt(Date.from(expires.toInstant()));
     } else {
       p.setExpiresAt(null);
+    }
+
+    if (!isEvent) {
+      // Ensure non-event posts do not carry RSVP data.
+      p.setRsvpUserIds(new ArrayList<>());
+    } else {
+      p.getRsvpUserIds(); // initialize for new events
     }
   }
 
   @PostMapping("/{postId}/bookmark")
-public ResponseEntity<Void> bookmarkPost(
-        @PathVariable String postId,
-        @RequestParam String userId
-) {
+  public ResponseEntity<Void> bookmarkPost(
+          @PathVariable String postId,
+          @RequestParam String userId
+  ) {
     postService.bookmarkPost(userId, postId);
     return ResponseEntity.ok().build();
-}
+  }
 
-@DeleteMapping("/{postId}/bookmark")
-public ResponseEntity<Void> unbookmarkPost(
-        @PathVariable String postId,
-        @RequestParam String userId
-) {
+  @DeleteMapping("/{postId}/bookmark")
+  public ResponseEntity<Void> unbookmarkPost(
+          @PathVariable String postId,
+          @RequestParam String userId
+  ) {
     postService.unbookmarkPost(userId, postId);
     return ResponseEntity.noContent().build();
-}
+  }
 
-@GetMapping("/bookmarked")
-public List<Post> getBookmarkedPosts(@RequestParam String userId) {
+  @GetMapping("/bookmarked")
+  public List<Post> getBookmarkedPosts(@RequestParam String userId) {
     return postService.getBookmarkedPosts(userId);
-}
+  }
+
+  @PostMapping("/{postId}/rsvp")
+  public ResponseEntity<?> rsvpEvent(
+          @PathVariable String postId,
+          @RequestParam String userId
+  ) {
+    try {
+      Post updated = postService.rsvpToEvent(userId, postId);
+      postAuthorService.attachAuthor(updated);
+      return ResponseEntity.ok(updated);
+    } catch (RuntimeException e) {
+      return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", e.getMessage()));
+    }
+  }
+
+  @DeleteMapping("/{postId}/rsvp")
+  public ResponseEntity<?> cancelRsvp(
+          @PathVariable String postId,
+          @RequestParam String userId
+  ) {
+    try {
+      Post updated = postService.cancelRsvp(userId, postId);
+      postAuthorService.attachAuthor(updated);
+      return ResponseEntity.ok(updated);
+    } catch (RuntimeException e) {
+      return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", e.getMessage()));
+    }
+  }
+
+  @GetMapping("/{postId}/rsvps")
+  public ResponseEntity<?> listRsvps(
+          @PathVariable String postId,
+          @RequestParam String requestingUserId
+  ) {
+    try {
+      List<Post.AuthorSummary> attendees = postService.getRsvps(postId, requestingUserId);
+      return ResponseEntity.ok(attendees);
+    } catch (RuntimeException e) {
+      return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", e.getMessage()));
+    }
+  }
 }

@@ -2,6 +2,12 @@ import { api } from "./http";
 import type { Post } from "../types/post";
 import type { ProfileResponse } from "../types/profile";
 
+export type AttendeeSummary = {
+  id: string;
+  firstName: string;
+  lastName: string;
+};
+
 export const postService = {
   async getProfile(userId: string): Promise<ProfileResponse> {
     const { data } = await api.get<ProfileResponse>(`/users/${userId}/profile`);
@@ -40,5 +46,26 @@ export const postService = {
     await api.delete(`/posts/${postId}/bookmark`, {
       params: { userId },
     });
+  },
+
+  async rsvp(postId: string, userId: string): Promise<Post> {
+    const { data } = await api.post<Post>(`/posts/${postId}/rsvp`, null, {
+      params: { userId },
+    });
+    return data;
+  },
+
+  async cancelRsvp(postId: string, userId: string): Promise<Post> {
+    const { data } = await api.delete<Post>(`/posts/${postId}/rsvp`, {
+      params: { userId },
+    });
+    return data;
+  },
+
+  async getRsvps(postId: string, requestingUserId: string): Promise<AttendeeSummary[]> {
+    const { data } = await api.get<AttendeeSummary[]>(`/posts/${postId}/rsvps`, {
+      params: { requestingUserId },
+    });
+    return data;
   },
 };

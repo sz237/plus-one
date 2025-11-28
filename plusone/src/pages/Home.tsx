@@ -32,6 +32,8 @@ function Home() {
   const [navOpen, setNavOpen] = useState(false);
   const [suggestedUsers, setSuggestedUsers] = useState<UserProfile[]>([]);
   const [friends, setFriends] = useState<UserProfile[]>([]);
+  const [sameCityUsers, setSameCityUsers] = useState<UserProfile[]>([]);
+  const [sameCityError, setSameCityError] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -53,9 +55,11 @@ function Home() {
     try {
       setLoading(true);
       setError('');
+      setSameCityError("");
       
       let suggestionsLoaded = false;
       let friendsLoaded = false;
+      let sameCityLoaded = false;
       
       // Load suggestions and friends separately so one failure doesn't block the other
       try {
@@ -77,9 +81,19 @@ function Home() {
         console.error('Error details:', err.response?.data || err.message);
         setFriends([]);
       }
+
+      try {
+        const cityUsers = await connectionService.getSameCityUsers(user.userId);
+        setSameCityUsers(cityUsers || []);
+        sameCityLoaded = true;
+      } catch (err: any) {
+        console.error('Error loading same-city users:', err);
+        setSameCityUsers([]);
+        setSameCityError('Could not load people near you.');
+      }
       
       // Only show error if both failed
-      if (!suggestionsLoaded && !friendsLoaded) {
+      if (!suggestionsLoaded && !friendsLoaded && !sameCityLoaded) {
         setError('Failed to load users. Please try refreshing the page.');
       }
     } catch (err: any) {
@@ -150,20 +164,74 @@ function Home() {
             {/* Suggested Users Section */}
             <div className="mb-5">
               <h2 className="h5 mb-3">People you might want to connect with</h2>
-              {suggestedUsers.length === 0 ? (
-                <p className="text-muted">You are already friends with everyone on the platform.</p>
-              ) : (
-                <div className="row">
-                  {suggestedUsers.map((userProfile) => (
-                    <UserProfileCard
-                      key={userProfile.userId}
-                      user={userProfile}
-                      currentUserId={user.userId}
-                      onConnectionUpdate={handleConnectionUpdate}
-                    />
-                  ))}
+              <div className="row">
+                <div className="col-12 col-lg-8">
+                  {suggestedUsers.length === 0 ? (
+                    <p className="text-muted">You are already friends with everyone on the platform.</p>
+                  ) : (
+                    <div className="row">
+                      {suggestedUsers.map((userProfile) => (
+                        <UserProfileCard
+                          key={userProfile.userId}
+                          user={userProfile}
+                          currentUserId={user.userId}
+                          onConnectionUpdate={handleConnectionUpdate}
+                        />
+                      ))}
+                    </div>
+                  )}
                 </div>
-              )}
+                <div className="col-12 col-lg-4 mt-3 mt-lg-0">
+                  <div
+                    className="border border-2 p-3 h-100"
+                    style={{ borderColor: "#000", maxHeight: 420, overflowY: "auto" }}
+                  >
+                    <div className="d-flex justify-content-between align-items-center mb-2">
+                      <h3 className="h6 mb-0">Near you</h3>
+                      {sameCityUsers.length > 0 && (
+                        <span className="badge text-bg-light" style={{ border: "1px solid #000" }}>
+                          {sameCityUsers.length}
+                        </span>
+                      )}
+                    </div>
+                    {sameCityError ? (
+                      <div className="text-danger small mb-0">{sameCityError}</div>
+                    ) : sameCityUsers.length === 0 ? (
+                      <div className="text-muted small">No other users in your city yet.</div>
+                    ) : (
+                      sameCityUsers.map((u) => (
+                        <div key={u.userId} className="d-flex align-items-start justify-content-between py-2 border-bottom">
+                          <div>
+                            <div className="fw-semibold small">
+                              {u.firstName} {u.lastName}
+                            </div>
+                            <div className="text-muted small">
+                              {u.profile?.job?.title || "—"}
+                              {u.profile?.job?.companiesName ? ` @ ${u.profile.job.companiesName}` : ""}
+                            </div>
+                          </div>
+                          <button
+                            className="btn btn-outline-dark btn-sm"
+                            onClick={async () => {
+                              try {
+                                await connectionService.createConnectionRequest(user.userId, {
+                                  toUserId: u.userId,
+                                  message: "",
+                                });
+                                handleConnectionUpdate();
+                              } catch (err) {
+                                console.error("Failed to send request", err);
+                              }
+                            }}
+                          >
+                            Connect
+                          </button>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              </div>
             </div>
 
             {/* Friends Section */}

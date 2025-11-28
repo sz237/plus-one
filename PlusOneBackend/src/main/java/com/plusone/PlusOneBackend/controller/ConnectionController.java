@@ -70,6 +70,20 @@ public class ConnectionController {
     }
 
     /**
+     * Get users in the same city as the current user (excluding self, friends, and pending requests).
+     */
+    @GetMapping("/same-city")
+    public ResponseEntity<List<UserProfileDto>> getSameCityUsers(@RequestParam String currentUserId) {
+        try {
+            List<UserProfileDto> users = connectionService.getSameCityUsers(currentUserId);
+            return ResponseEntity.ok(users);
+        } catch (Exception e) {
+            logger.error("Error getting same-city users: {}", e.getMessage(), e);
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    /**
      * Create a connection request
      */
     @PostMapping("/request")

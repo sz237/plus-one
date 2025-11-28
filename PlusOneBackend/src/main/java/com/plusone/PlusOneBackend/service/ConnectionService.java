@@ -62,6 +62,44 @@ public class ConnectionService {
     }
 
     /**
+     * Get users in the same city as current user (excluding self). Optionally filter
+     * out existing connections and pending requests.
+     */
+    public List<UserProfileDto> getSameCityUsers(String currentUserId) {
+        Optional<User> currentOpt = userRepository.findById(currentUserId);
+        if (currentOpt.isEmpty()) {
+            return List.of();
+        }
+        User current = currentOpt.get();
+        String city = current.getProfile() != null && current.getProfile().getLocation() != null
+                ? current.getProfile().getLocation().getCity()
+                : null;
+        if (city == null || city.trim().isEmpty()) {
+            return List.of();
+        }
+        List<User> peers = userRepository.findByProfileLocationCityIgnoreCaseAndIdNot(city.trim(), currentUserId);
+
+        // Filter out existing friends
+        Set<String> connectedIds = connectionRepository.findByUser1IdOrUser2Id(currentUserId, currentUserId)
+                .stream()
+                .map(conn -> conn.getUser1Id().equals(currentUserId) ? conn.getUser2Id() : conn.getUser1Id())
+                .collect(Collectors.toSet());
+
+        // Filter out pending requests
+        Set<String> pendingIds = connectionRequestRepository.findByFromUserIdOrToUserId(currentUserId, currentUserId)
+                .stream()
+                .filter(req -> "PENDING".equalsIgnoreCase(req.getStatus()))
+                .map(req -> req.getFromUserId().equals(currentUserId) ? req.getToUserId() : req.getFromUserId())
+                .collect(Collectors.toSet());
+
+        return peers.stream()
+                .filter(u -> !connectedIds.contains(u.getId()))
+                .filter(u -> !pendingIds.contains(u.getId()))
+                .map(this::convertToUserProfileDto)
+                .collect(Collectors.toList());
+    }
+
+    /**
      * Get all friends (connected users) for the current user.
      * Sorted arbitrarily (by creation date).
      * 

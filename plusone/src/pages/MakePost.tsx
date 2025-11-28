@@ -12,6 +12,7 @@ export default function MakePost() {
   const [file, setFile] = useState<File | null>(null);
   const [imageUrl, setImageUrl] = useState<string | undefined>(undefined);
   const [eventDate, setEventDate] = useState<string>("");
+  const [eventTime, setEventTime] = useState<string>("");
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const navigate = useNavigate();
@@ -30,6 +31,7 @@ export default function MakePost() {
       setDescription(p.description);
       setImageUrl(p.imageUrl || undefined);
       setEventDate(p.eventDate || "");
+      setEventTime(p.eventTime ? p.eventTime.slice(0, 5) : "");
     }
   }, [state]);
 
@@ -46,7 +48,10 @@ export default function MakePost() {
 
   const handleSelectCategory = (label: Category) => {
     setCategory(label);
-    if(label !== "Events") setEventDate("");
+    if(label !== "Events") {
+      setEventDate("");
+      setEventTime("");
+    }
   };
 
   const onFilePick = () => fileInputRef.current?.click();
@@ -70,6 +75,7 @@ export default function MakePost() {
       description,
       imageUrl: imageUrl || undefined,
       eventDate: category === "Events" && eventDate ? eventDate : null,
+      eventTime: category === "Events" && eventTime ? eventTime : null,
     };
 
     if (payload.id) {
@@ -156,6 +162,14 @@ export default function MakePost() {
                 required={category === "Events"} 
                 min={new Date().toISOString().slice(0,10)}
                />
+              <label className="form-label mb-1 mt-3">Event start time</label>
+              <input
+                type="time"
+                className="form-control"
+                value={eventTime}
+                onChange={(e) => setEventTime(e.target.value)}
+                required={category === "Events"}
+              />
             </div>
           )}
 
