@@ -123,8 +123,11 @@ export default function Search() {
 
   const openAttachment = (url?: string) => {
     if (!url) return;
-    const win = window.open(url, "_blank", "noopener,noreferrer");
-    if (!win) alert("Please allow popups to view attachments.");
+    const link = document.createElement("a");
+    link.href = url;
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    link.click();
   };
 
   const formatEventDateTime = (date?: string | null, time?: string | null) => {
@@ -195,7 +198,6 @@ export default function Search() {
           (p) => !user?.userId || (p.userId !== user.userId && p.author?.id !== user.userId)
         );
         setPostResults(filtered);
-        setBookmarkedIds(new Set());
       }
     } catch (err: any) {
       setError(err?.message || "Something went wrong.");
