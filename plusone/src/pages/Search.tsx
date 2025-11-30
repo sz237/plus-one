@@ -17,6 +17,8 @@ type User = {
   job?: { title?: string; companiesName?: string };
   numConnections?: number;
   profilePhotoUrl?: string;
+  location?: { city?: string; state?: string; country?: string };
+  lookingForRoommate?: boolean | null;
 };
 
 // Post type
@@ -79,6 +81,7 @@ export default function Search() {
   const [selectedProfile, setSelectedProfile] = useState<ProfileResponse | null>(null);
   const [profileLoading, setProfileLoading] = useState(false);
   const [profileError, setProfileError] = useState("");
+  const [currentProfile, setCurrentProfile] = useState<ProfileResponse | null>(null);
 
   // current logged-in user (from localStorage)
   const user = useMemo<StoredUser | null>(() => {
@@ -137,6 +140,19 @@ export default function Search() {
     return timeStr ? `${dateStr} at ${timeStr}` : dateStr;
   };
 
+  const sameLocation = (a?: User["location"], b?: ProfileResponse["profile"]["location"]) => {
+    if (!a || !b) return false;
+    const cityMatch = a.city && b.city && a.city.toLowerCase() === b.city.toLowerCase();
+    const stateMatch = a.state && b.state && a.state.toLowerCase() === b.state.toLowerCase();
+    const countryMatch =
+      a.country && b.country && a.country.toLowerCase() === b.country.toLowerCase();
+    // Prefer strict city+state match when available; fall back to country
+    if (cityMatch && stateMatch) return true;
+    if (cityMatch && !b.state) return true;
+    if (stateMatch && !b.city) return true;
+    return countryMatch;
+  };
+
   const openAuthorProfile = async (authorId?: string) => {
     if (!authorId) return;
     try {
@@ -175,6 +191,27 @@ export default function Search() {
     };
   }, [user?.userId]);
 
+  // Load current user's profile for location-based roommate filtering
+  useEffect(() => {
+    let cancelled = false;
+    const loadProfile = async () => {
+      if (!user?.userId) {
+        setCurrentProfile(null);
+        return;
+      }
+      try {
+        const res = await postService.getProfile(user.userId);
+        if (!cancelled) setCurrentProfile(res);
+      } catch (err) {
+        console.error("Failed to load current profile", err);
+      }
+    };
+    loadProfile();
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.userId]);
+
   // Runs when you submit the form (Enter or button click)
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault(); // don’t reload the page
@@ -202,7 +239,15 @@ export default function Search() {
         });
         if (!res.ok) throw new Error(`Search failed (${res.status})`);
         const data: User[] = await res.json();
-        setUserResults(data);
+        const roommateQuery = userMode === "interests" && q.toLowerCase().includes("room");
+        const filteredUsers = roommateQuery && currentProfile?.profile?.location
+          ? data.filter(
+              (u) =>
+                u.lookingForRoommate &&
+                sameLocation(u.location, currentProfile.profile.location)
+            )
+          : data;
+        setUserResults(filteredUsers);
       } else {
         //searching posts
         const category = categoryMap[target];
