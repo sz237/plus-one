@@ -19,7 +19,7 @@
   opacity: 0;
   pointer-events: none;
   transition: opacity 200ms ease-in-out;
-  z-index: 1030;
+  z-index: 1030; /* header sits above at 1055 so hamburger stays clickable */
 }
 .sidebar-overlay.show {
   opacity: 1;

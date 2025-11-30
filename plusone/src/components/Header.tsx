@@ -8,7 +8,7 @@ export default function Header({ title, isNavOpen, onToggleNav }: HeaderProps) {
   return (
     <header
       className="d-flex align-items-center"
-      style={{ height: 65, background: "#000", paddingLeft: 12, gap: 8 }}
+      style={{ height: 65, background: "#000", paddingLeft: 12, gap: 8, position: "relative", zIndex: 1055 }}
     >
       <button
         aria-label="Toggle navigation"
