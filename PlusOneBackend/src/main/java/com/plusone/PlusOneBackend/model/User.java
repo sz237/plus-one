@@ -9,6 +9,9 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.plusone.PlusOneBackend.model.User.Onboarding;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -74,6 +77,26 @@ public class User {
         return (profile != null && profile.getInterests() != null)
                 ? profile.getInterests()
                 : Collections.emptyList();
+    }
+
+    // Get profile photo URL for the frontend:
+    @JsonProperty("profilePhotoUrl")
+    public String getProfilePhotoUrl() {
+        if (profile == null || profile.getProfilePhoto() == null)
+            return null;
+        return profile.getProfilePhoto().getUrl();
+    }
+
+    // Top-level job object with { title, companyName } that your UI expects:
+    @JsonProperty("job")
+    public java.util.Map<String, String> getJobPublic() {
+        if (profile == null || profile.getJob() == null)
+            return null;
+        var j = profile.getJob();
+        // companiesName → companyName (rename for the client)
+        return java.util.Map.of(
+                "title", j.getTitle() != null ? j.getTitle() : "",
+                "companyName", j.getCompaniesName() != null ? j.getCompaniesName() : "");
     }
 
     @Data
