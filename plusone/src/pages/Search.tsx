@@ -10,7 +10,7 @@ type User = {
   firstName: string;
   lastName: string;
   interests?: string[];
-  job?: { title?: string; companyName?: string };
+  job?: { title?: string; companiesName?: string };
   numConnections?: number;
   profilePhotoUrl?: string;
 };
@@ -116,10 +116,34 @@ export default function Search() {
         url = `${API_BASE_URL}/users/search?mode=${userMode}&q=${encodeURIComponent(
           q
         )}&limit=24`;
-        const res = await fetch(url);
+        const token = localStorage.getItem("token"); // JWT
+        const res = await fetch(url, {
+          credentials: "include", // send session cookie
+          headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        });
         if (!res.ok) throw new Error(`Search failed (${res.status})`);
-        const data: User[] = await res.json();
-        setUserResults(data);
+        const raw: any[] = await res.json();
+        const normalized: User[] = raw
+          // hide the current user
+          .filter((r) => !user?.userId || r.id !== user.userId)
+          // surface nested fields so the UI always has what it expects
+          .map((r) => ({
+            ...r,
+            // profile photo nested at r.profile.profilePhoto.url
+            profilePhotoUrl: r.profile?.profilePhoto?.url ?? null,
+
+            job:
+              r.job ??
+              (r.profile?.job
+                ? {
+                    title: r.profile.job.title,
+                    companiesName: r.profile.job.companiesName,
+                  }
+                : undefined),
+            interests: r.interests ?? r.profile?.interests ?? [],
+          }));
+
+        setUserResults(normalized);
       } else {
         //searching posts
         const category = categoryMap[target];
@@ -128,7 +152,7 @@ export default function Search() {
         )}&limit=24`;
         const token = localStorage.getItem("token");
         const res = await fetch(url, {
-          credentials: "include", // <-- send session cookie
+          credentials: "include", // send session cookie
           headers: token ? { Authorization: `Bearer ${token}` } : undefined,
         });
         if (!res.ok) throw new Error(`Search failed (${res.status})`);
@@ -282,7 +306,7 @@ export default function Search() {
                     </div>
                     <div className="small text-muted">
                       {u.job?.title || "—"}
-                      {u.job?.companyName ? ` @ ${u.job.companyName}` : ""}
+                      {u.job?.companiesName ? ` @ ${u.job.companiesName}` : ""}
                     </div>
                     <div className="small mt-1">
                       <strong>Connections:</strong> {u.numConnections ?? 0}
