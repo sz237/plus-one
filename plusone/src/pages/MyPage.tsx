@@ -389,44 +389,43 @@ export default function MyPage() {
                         <p className="small mb-0">{p.description}</p>
                       </div>
 
-                    <div className="d-flex justify-content-between align-items-center gap-3 mt-3">
-                      {p.category === "Events" ? (
-                        <button
-                          className="btn btn-outline-dark btn-sm"
-                          onClick={() => openGuestList(p)}
-                          style={{ minWidth: 120 }}
-                        >
-                          Guest list
-                          {(() => {
-                            const count = p.rsvpCount ?? p.rsvpUserIds?.length ?? 0;
-                            return count ? ` (${count})` : "";
-                          })()}
-                        </button>
-                      ) : (
-                        <span />
-                      )}
-                      <div className="d-flex justify-content-end align-items-center gap-3">
-                        <button
-                          className="btn btn-link p-0"
-                          onClick={() => onEdit(p)}
-                          title="Edit"
-                        >
-                          <span style={{ fontSize: 20, color: "#000" }}>🖉</span>
-                        </button>
-                        <button
-                          className="btn btn-link p-0"
-                          onClick={() => onDelete(p.id)}
-                          title="Delete"
-                        >
-                          <span style={{ fontSize: 20, color: "#000" }}>🗑️</span>
-                        </button>
+                      <div className="d-flex justify-content-between align-items-center gap-3 mt-3">
+                        {p.category === "Events" ? (
+                          <button
+                            className="btn btn-outline-dark btn-sm"
+                            onClick={() => openGuestList(p)}
+                            style={{ minWidth: 120 }}
+                          >
+                            Guest list
+                            {(() => {
+                              const count = p.rsvpCount ?? p.rsvpUserIds?.length ?? 0;
+                              return count ? ` (${count})` : "";
+                            })()}
+                          </button>
+                        ) : (
+                          <span />
+                        )}
+                        <div className="d-flex justify-content-end align-items-center gap-3">
+                          <button
+                            className="btn btn-link p-0"
+                            onClick={() => onEdit(p)}
+                            title="Edit"
+                          >
+                            <span style={{ fontSize: 20, color: "#000" }}>🖉</span>
+                          </button>
+                          <button
+                            className="btn btn-link p-0"
+                            onClick={() => onDelete(p.id)}
+                            title="Delete"
+                          >
+                            <span style={{ fontSize: 20, color: "#000" }}>🗑️</span>
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
-                    </div>
-                  </div>
-                );
-              })}
+              );
+            })}
 
               {/* New Post tile */}
               <div className="col-12 col-md-4">
