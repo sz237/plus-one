@@ -73,6 +73,7 @@ export default function Search() {
   const [connectionStatuses, setConnectionStatuses] = useState<Record<string, string>>(
     {}
   );
+  const [bookmarkedIds, setBookmarkedIds] = useState<Set<string>>(new Set());
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [showConnectPopup, setShowConnectPopup] = useState(false);
   const [selectedProfile, setSelectedProfile] = useState<ProfileResponse | null>(null);
@@ -246,6 +247,11 @@ export default function Search() {
     }
     try {
       await postService.bookmarkPost(user.userId, postId);
+      setBookmarkedIds((prev) => {
+        const next = new Set(prev);
+        next.add(postId);
+        return next;
+      });
       alert("Post bookmarked! You can see it on your My Page.");
     } catch (err) {
       console.error("Failed to bookmark post", err);
@@ -473,6 +479,7 @@ export default function Search() {
               .filter(Boolean)
               .join(" ");
             const hasImagePreview = isImageAttachment(image);
+            const isBookmarked = bookmarkedIds.has(p.id);
             return (
               <div key={p.id} className="col-12 col-md-6 col-lg-4">
                 <div
@@ -546,7 +553,14 @@ export default function Search() {
 
                     <button
                       type="button"
-                      className="btn btn-sm btn-outline-dark mt-1"
+                      className={`btn btn-sm mt-1 ${
+                        isBookmarked ? "btn-dark" : "btn-outline-dark"
+                      }`}
+                      style={
+                        isBookmarked
+                          ? { backgroundColor: "#F2E1C0", color: "#000", borderColor: "#000", fontWeight: 700 }
+                          : undefined
+                      }
                       onClick={() => handleBookmark(p.id)}
                     >
                       ★ Bookmark
