@@ -19,6 +19,10 @@ type User = {
   profilePhotoUrl?: string;
   location?: { city?: string; state?: string; country?: string };
   lookingForRoommate?: boolean | null;
+  profile?: {
+    location?: { city?: string; state?: string; country?: string };
+    lookingForRoommate?: boolean | null;
+  };
 };
 
 // Post type
@@ -243,8 +247,8 @@ export default function Search() {
         const filteredUsers = roommateQuery && currentProfile?.profile?.location
           ? data.filter(
               (u) =>
-                u.lookingForRoommate &&
-                sameLocation(u.location, currentProfile.profile.location)
+                (u.lookingForRoommate ?? u.profile?.lookingForRoommate) &&
+                sameLocation(u.location || u.profile?.location, currentProfile.profile.location)
             )
           : data;
         setUserResults(filteredUsers);
