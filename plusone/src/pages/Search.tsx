@@ -1,12 +1,15 @@
 import PageTemplate from "../components/PageTemplate";
 import { API_BASE_URL } from "../services/http"; // shared base URL from env/default
 import { postService } from "../services/postService";
-import { useMemo, useState } from "react";
+import { connectionService } from "../services/connectionService";
+import ConnectPopup from "../components/ConnectPopup";
+import { useEffect, useMemo, useState } from "react";
 
 // Types
 // User type
 type User = {
   id: string;
+  userId?: string; // fallback in case API returns userId
   firstName: string;
   lastName: string;
   interests?: string[];
@@ -63,6 +66,11 @@ export default function Search() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [hasSearched, setHasSearched] = useState(false); // <-- track if a search ran
+  const [connectionStatuses, setConnectionStatuses] = useState<Record<string, string>>(
+    {}
+  );
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [showConnectPopup, setShowConnectPopup] = useState(false);
 
   // current logged-in user (from localStorage)
   const user = useMemo<StoredUser | null>(() => {
@@ -146,6 +154,45 @@ export default function Search() {
     }
   };
 
+  // Load connection statuses for displayed users so we can show proper buttons
+  useEffect(() => {
+    if (!user?.userId || userResults.length === 0) {
+      setConnectionStatuses({});
+      return;
+    }
+
+    let cancelled = false;
+    const loadStatuses = async () => {
+      const entries = await Promise.all(
+        userResults.map(async (u) => {
+          const userId = u.id || u.userId;
+          if (!userId || userId === user.userId) return [userId, "SELF"] as const;
+          try {
+            const status = await connectionService.getConnectionStatus(
+              user.userId,
+              userId
+            );
+            return [userId, status || "CONNECT"] as const;
+          } catch (err) {
+            console.error("Failed to load connection status", err);
+            return [userId, "CONNECT"] as const;
+          }
+        })
+      );
+      if (cancelled) return;
+      const next: Record<string, string> = {};
+      entries.forEach(([id, status]) => {
+        if (id) next[id] = status;
+      });
+      setConnectionStatuses(next);
+    };
+
+    loadStatuses();
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.userId, userResults]);
+
   const total = target === "users" ? userResults.length : postResults.length;
 
   const showEmpty = hasSearched && !loading && !error && total === 0;
@@ -162,6 +209,22 @@ export default function Search() {
       console.error("Failed to bookmark post", err);
       alert("Failed to bookmark post. Please try again.");
     }
+  };
+
+  const handleConnectClick = (u: User) => {
+    if (!user?.userId) {
+      alert("Please log in to connect with people.");
+      return;
+    }
+    if (user.userId === u.id || user.userId === u.userId) {
+      return;
+    }
+    setSelectedUser(u);
+    setShowConnectPopup(true);
+  };
+
+  const markPending = (userId: string) => {
+    setConnectionStatuses((prev) => ({ ...prev, [userId]: "PENDING" }));
   };
 
   return (
@@ -262,54 +325,103 @@ export default function Search() {
       {/* Results */}
       <div className="row g-3">
         {target === "users" &&
-          userResults.map((u) => (
-            <div key={u.id} className="col-12 col-md-6 col-lg-4">
-              <div
-                className="p-3 border border-2"
-                style={{ borderColor: "#000" }}
-              >
-                <div className="d-flex align-items-center gap-3">
-                  <img
-                    src={u.profilePhotoUrl || "https://placehold.co/64x64"}
-                    alt={`${u.firstName} ${u.lastName}`}
-                    width={64}
-                    height={64}
-                    style={{
-                      borderRadius: "50%",
-                      border: "2px solid #000",
-                      objectFit: "cover",
-                    }}
-                  />
-                  <div>
-                    <div className="fw-bold">
-                      {u.firstName} {u.lastName}
-                    </div>
-                    <div className="small text-muted">
-                      {u.job?.title || "—"}
-                      {u.job?.companiesName ? ` @ ${u.job.companiesName}` : ""}
-                    </div>
-                    <div className="small mt-1">
-                      <strong>Connections:</strong> {u.numConnections ?? 0}
-                    </div>
-                  </div>
-                </div>
+          userResults.map((u) => {
+            const userId = u.id || u.userId;
+            const status = userId
+              ? connectionStatuses[userId] || "CONNECT"
+              : "CONNECT";
+            const isSelf = !!(userId && user?.userId === userId);
+            const buttonLabel = !user?.userId
+              ? "Log in to connect"
+              : isSelf
+              ? "This is you"
+              : status === "FRIENDS"
+              ? "Friends"
+              : status === "PENDING"
+              ? "Pending"
+              : "Connect";
+            const buttonClass =
+              status === "FRIENDS"
+                ? "btn btn-success btn-sm"
+                : status === "PENDING"
+                ? "btn btn-warning btn-sm text-dark"
+                : "btn btn-outline-dark btn-sm";
+            const buttonDisabled =
+              !user?.userId ||
+              isSelf ||
+              status === "FRIENDS" ||
+              status === "PENDING";
 
-                {!!(u.interests && u.interests.length) && (
-                  <div className="d-flex flex-wrap gap-2 mt-3">
-                    {u.interests.map((tag) => (
-                      <span
-                        key={tag}
-                        className="badge text-bg-light"
-                        style={{ border: "1px solid #000", fontWeight: 500 }}
-                      >
-                        {tag}
-                      </span>
-                    ))}
+            return (
+              <div key={u.id} className="col-12 col-md-6 col-lg-4">
+                <div
+                  className="p-3 border border-2 h-100 d-flex flex-column"
+                  style={{ borderColor: "#000" }}
+                >
+                  <div className="d-flex align-items-center gap-3">
+                    <img
+                      src={u.profilePhotoUrl || "https://placehold.co/64x64"}
+                      alt={`${u.firstName} ${u.lastName}`}
+                      width={64}
+                      height={64}
+                      style={{
+                        borderRadius: "50%",
+                        border: "2px solid #000",
+                        objectFit: "cover",
+                      }}
+                    />
+                    <div>
+                      <div className="fw-bold">
+                        {u.firstName} {u.lastName}
+                      </div>
+                      <div className="small text-muted">
+                        {u.job?.title || "—"}
+                        {u.job?.companiesName
+                          ? ` @ ${u.job.companiesName}`
+                          : ""}
+                      </div>
+                      <div className="small mt-1">
+                        <strong>Connections:</strong> {u.numConnections ?? 0}
+                      </div>
+                    </div>
                   </div>
-                )}
+
+                  <div className="mt-3 d-flex justify-content-between align-items-center">
+                    <button
+                      type="button"
+                      className={buttonClass}
+                      onClick={() => handleConnectClick(u)}
+                      disabled={buttonDisabled}
+                    >
+                      {buttonLabel}
+                    </button>
+                    {status === "FRIENDS" && (
+                      <span className="small text-success fw-semibold">
+                        Connected
+                      </span>
+                    )}
+                    {status === "PENDING" && (
+                      <span className="small text-muted">Request sent</span>
+                    )}
+                  </div>
+
+                  {!!(u.interests && u.interests.length) && (
+                    <div className="d-flex flex-wrap gap-2 mt-3">
+                      {u.interests.map((tag) => (
+                        <span
+                          key={tag}
+                          className="badge text-bg-light"
+                          style={{ border: "1px solid #000", fontWeight: 500 }}
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
 
         {target !== "users" &&
           postResults.map((p) => {
@@ -375,6 +487,23 @@ export default function Search() {
             );
           })}
       </div>
+
+      {selectedUser && user?.userId && (
+        <ConnectPopup
+          isOpen={showConnectPopup}
+          onClose={() => setShowConnectPopup(false)}
+          targetUser={{
+            userId: selectedUser.id || selectedUser.userId || "",
+            firstName: selectedUser.firstName,
+            lastName: selectedUser.lastName,
+          }}
+          currentUserId={user.userId}
+          onSuccess={() => {
+            const selectedId = selectedUser.id || selectedUser.userId;
+            if (selectedId) markPending(selectedId);
+          }}
+        />
+      )}
     </PageTemplate>
   );
 }
