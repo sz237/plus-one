@@ -371,7 +371,7 @@ export default function MyPage() {
                                 width: 90,
                                 height: 60,
                                 objectFit: "cover",
-                                border: "1px solid "#000",
+                                border: "1px solid #000",
                               }}
                             />
                           ) : (
