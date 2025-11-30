@@ -25,8 +25,7 @@ public class UserController {
     public ResponseEntity<List<User>> searchUsers(
             @RequestParam("q") String query,
             @RequestParam(value = "limit", defaultValue = "20") int limit,
-            @RequestParam(value = "mode", defaultValue = "interests") String mode,
-            @RequestParam(value = "requestingUserId", required = false) String requestingUserId) {
+            @RequestParam(value = "mode", defaultValue = "interests") String mode) {
         if (query == null || query.trim().isEmpty()) {
             return ResponseEntity.ok(List.of()); // return empty list for empty query
         }
@@ -36,7 +35,7 @@ public class UserController {
 
         List<User> users = "name".equalsIgnoreCase(mode)
                 ? userSearchService.searchByName(trimmed, cappedLimit)
-                : userSearchService.searchByInterest(trimmed, cappedLimit, requestingUserId);
+                : userSearchService.searchByInterest(trimmed, cappedLimit);
         return ResponseEntity.ok(users);
     }
 }
