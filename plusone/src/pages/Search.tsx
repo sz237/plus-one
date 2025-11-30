@@ -153,6 +153,28 @@ export default function Search() {
     }
   };
 
+  // Pull existing bookmarks so we can mark results as already saved
+  useEffect(() => {
+    let cancelled = false;
+    const loadBookmarks = async () => {
+      if (!user?.userId) {
+        setBookmarkedIds(new Set());
+        return;
+      }
+      try {
+        const bookmarked = await postService.getBookmarkedPosts(user.userId);
+        if (cancelled) return;
+        setBookmarkedIds(new Set(bookmarked.map((p) => p.id!).filter(Boolean)));
+      } catch (err) {
+        console.error("Failed to load bookmarked posts", err);
+      }
+    };
+    loadBookmarks();
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.userId]);
+
   // Runs when you submit the form (Enter or button click)
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault(); // don’t reload the page
