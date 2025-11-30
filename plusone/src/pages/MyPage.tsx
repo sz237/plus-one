@@ -209,7 +209,7 @@ export default function MyPage() {
     <div className="bg-white" style={{ minHeight: "100vh" }}>
       <header
         className="d-flex align-items-center"
-        style={{ height: 65, background: "#000", paddingLeft: 12, gap: 8 }}
+        style={{ height: 65, background: "#000", paddingLeft: 12, gap: 8, position: "relative", zIndex: 1055 }}
       >
         <button
           aria-label="Toggle navigation"
