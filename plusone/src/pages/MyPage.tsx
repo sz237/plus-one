@@ -45,6 +45,15 @@ export default function MyPage() {
     }
   }, []);
 
+  const isImageAttachment = (url?: string | null) => {
+    if (!url) return false;
+    const normalized = url.split("?")[0].toLowerCase();
+    return (
+      normalized.startsWith("data:image/") ||
+      /\.(png|jpe?g|gif|webp|bmp|svg)$/.test(normalized)
+    );
+  };
+
   const loadBookmarkedPosts = async () => {
   if (!user?.userId) return;
   try {
@@ -334,37 +343,51 @@ export default function MyPage() {
 
             {/* Posts grid */}
             <div className="row g-3">
-              {posts.map((p) => (
-                <div key={p.id} className="col-12 col-md-4">
-                  <div
-                    className="p-2 border border-2"
-                    style={{ borderColor: "#000" }}
-                  >
-                    <div className="d-flex justify-content-between small">
-                      <span className="text-muted">
-                        {p.category}
-                        {p.category === "Events" && p.eventDate ? ` • ${formatEventDateTime(p.eventDate, p.eventTime)}` : ""}
-                      </span>
-                      <span className="text-muted">{timeAgo(p.createdAt)}</span>
-                    </div>
-                    <hr className="my-1" />
-                    <hr className="mt-0 mb-2" />
-                    <div className="fw-bold">{p.title}</div>
-                    <div className="d-flex gap-2 mt-2">
-                      {p.imageUrl ? (
-                        <img
-                          src={p.imageUrl}
-                          alt={p.title}
-                          style={{
-                            width: 90,
-                            height: 60,
-                            objectFit: "cover",
-                            border: "1px solid #000",
-                          }}
-                        />
-                      ) : null}
-                      <p className="small mb-0">{p.description}</p>
-                    </div>
+              {posts.map((p) => {
+                const hasImagePreview = isImageAttachment(p.imageUrl);
+                return (
+                  <div key={p.id} className="col-12 col-md-4">
+                    <div
+                      className="p-2 border border-2"
+                      style={{ borderColor: "#000" }}
+                    >
+                      <div className="d-flex justify-content-between small">
+                        <span className="text-muted">
+                          {p.category}
+                          {p.category === "Events" && p.eventDate ? ` • ${formatEventDateTime(p.eventDate, p.eventTime)}` : ""}
+                        </span>
+                        <span className="text-muted">{timeAgo(p.createdAt)}</span>
+                      </div>
+                      <hr className="my-1" />
+                      <hr className="mt-0 mb-2" />
+                      <div className="fw-bold">{p.title}</div>
+                      <div className="d-flex gap-2 mt-2">
+                        {p.imageUrl ? (
+                          hasImagePreview ? (
+                            <img
+                              src={p.imageUrl}
+                              alt={p.title}
+                              style={{
+                                width: 90,
+                                height: 60,
+                                objectFit: "cover",
+                                border: "1px solid "#000",
+                              }}
+                            />
+                          ) : (
+                            <a
+                              href={p.imageUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="btn btn-sm btn-outline-dark"
+                              style={{ minWidth: 120 }}
+                            >
+                              View attachment
+                            </a>
+                          )
+                        ) : null}
+                        <p className="small mb-0">{p.description}</p>
+                      </div>
 
                     <div className="d-flex justify-content-between align-items-center gap-3 mt-3">
                       {p.category === "Events" ? (
@@ -400,8 +423,10 @@ export default function MyPage() {
                       </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                    </div>
+                  </div>
+                );
+              })}
 
               {/* New Post tile */}
               <div className="col-12 col-md-4">
@@ -417,57 +442,72 @@ export default function MyPage() {
               </div>
             </div>
             {/* Bookmarked Posts */}
-<h3 className="h5 fw-bold mb-3 mt-4">Bookmarked Posts</h3>
-<div className="row g-3">
-  {bookmarkedPosts.length === 0 ? (
-    <div className="col-12">
-      <p className="text-muted small mb-0">
-        You haven&apos;t bookmarked any posts yet.
-      </p>
-    </div>
-  ) : (
-    bookmarkedPosts.map((p) => (
-      <div key={p.id} className="col-12 col-md-4">
-        <div className="p-2 border border-2" style={{ borderColor: "#000" }}>
-          <div className="d-flex justify-content-end mt-2">
-  <button
-    className="btn btn-link p-0"
-    title="Remove bookmark"
-    onClick={() => handleUnbookmark(p.id!)}
-  >
-    <span style={{ fontSize: 20, color: "#000" }}>★</span>
-  </button>
-</div>
-          <div className="d-flex justify-content-between small">
-            <span className="text-muted">
-              {p.category}
-              {p.category === "Events" && p.eventDate ? ` • ${formatEventDateTime(p.eventDate, p.eventTime)}` : ""}
-            </span>
-            <span className="text-muted">{timeAgo(p.createdAt)}</span>
-          </div>
-          <hr className="my-1" />
-          <hr className="mt-0 mb-2" />
-          <div className="fw-bold">{p.title}</div>
-          <div className="d-flex gap-2 mt-2">
-            {p.imageUrl ? (
-              <img
-                src={p.imageUrl}
-                alt={p.title}
-                style={{
-                  width: 90,
-                  height: 60,
-                  objectFit: "cover",
-                  border: "1px solid #000",
-                }}
-              />
-            ) : null}
-            <p className="small mb-0">{p.description}</p>
-          </div>
-        </div>
-      </div>
-    ))
-  )}
-</div>
+            <h3 className="h5 fw-bold mb-3 mt-4">Bookmarked Posts</h3>
+            <div className="row g-3">
+              {bookmarkedPosts.length === 0 ? (
+                <div className="col-12">
+                  <p className="text-muted small mb-0">
+                    You haven&apos;t bookmarked any posts yet.
+                  </p>
+                </div>
+              ) : (
+                bookmarkedPosts.map((p) => {
+                  const hasImagePreview = isImageAttachment(p.imageUrl);
+                  return (
+                    <div key={p.id} className="col-12 col-md-4">
+                      <div className="p-2 border border-2" style={{ borderColor: "#000" }}>
+                        <div className="d-flex justify-content-end mt-2">
+                          <button
+                            className="btn btn-link p-0"
+                            title="Remove bookmark"
+                            onClick={() => handleUnbookmark(p.id!)}
+                          >
+                            <span style={{ fontSize: 20, color: "#000" }}>★</span>
+                          </button>
+                        </div>
+                        <div className="d-flex justify-content-between small">
+                          <span className="text-muted">
+                            {p.category}
+                            {p.category === "Events" && p.eventDate ? ` • ${formatEventDateTime(p.eventDate, p.eventTime)}` : ""}
+                          </span>
+                          <span className="text-muted">{timeAgo(p.createdAt)}</span>
+                        </div>
+                        <hr className="my-1" />
+                        <hr className="mt-0 mb-2" />
+                        <div className="fw-bold">{p.title}</div>
+                        <div className="d-flex gap-2 mt-2">
+                          {p.imageUrl ? (
+                            hasImagePreview ? (
+                              <img
+                                src={p.imageUrl}
+                                alt={p.title}
+                                style={{
+                                  width: 90,
+                                  height: 60,
+                                  objectFit: "cover",
+                                  border: "1px solid #000",
+                                }}
+                              />
+                            ) : (
+                              <a
+                                href={p.imageUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="btn btn-sm btn-outline-dark"
+                                style={{ minWidth: 120 }}
+                              >
+                                View attachment
+                              </a>
+                            )
+                          ) : null}
+                          <p className="small mb-0">{p.description}</p>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
           </>
         )}
       </main>

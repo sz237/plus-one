@@ -55,6 +55,21 @@ export default function MakePost() {
   };
 
   const onFilePick = () => fileInputRef.current?.click();
+  const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const nextFile = e.target.files?.[0] || null;
+    setFile(nextFile);
+    if (nextFile) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        if (typeof reader.result === "string") {
+          setImageUrl(reader.result);
+        }
+      };
+      reader.readAsDataURL(nextFile);
+    } else {
+      setImageUrl(undefined);
+    }
+  };
 
   const today = new Date();
   const yyyy = today.getFullYear();
@@ -66,7 +81,6 @@ export default function MakePost() {
     e.preventDefault();
     if (!user?.userId) return;
 
-    // TODO: upload file later; for now, just ignore or use a stub URL
     const payload: Post = {
       id: state?.post?.id,
       userId: user.userId,
@@ -184,7 +198,7 @@ export default function MakePost() {
                 ref={fileInputRef}
                 type="file"
                 className="d-none"
-                onChange={(e) => setFile(e.target.files?.[0] || null)}
+                onChange={onFileChange}
               />
               <button type="button" className="btn btn-outline-dark btn-sm px-3" onClick={onFilePick}>
                 + Upload file

@@ -104,6 +104,15 @@ export default function Search() {
       ? "Housing"
       : "Other posts";
 
+  const isImageAttachment = (url?: string) => {
+    if (!url) return false;
+    const normalized = url.split("?")[0].toLowerCase();
+    return (
+      normalized.startsWith("data:image/") ||
+      /\.(png|jpe?g|gif|webp|bmp|svg)$/.test(normalized)
+    );
+  };
+
   // Runs when you submit the form (Enter or button click)
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault(); // don’t reload the page
@@ -433,24 +442,35 @@ export default function Search() {
             const authorLabel = authorName
               ? `Posted by ${authorName}`
               : "Posted by an unknown user";
+            const hasImagePreview = isImageAttachment(image);
             return (
               <div key={p.id} className="col-12 col-md-6 col-lg-4">
                 <div
                   className="p-3 border border-2 h-100"
                   style={{ borderColor: "#000" }}
                 >
-                  {image && (
-                    <img
-                      src={image}
-                      alt={p.title}
-                      style={{
-                        width: "100%",
-                        height: 160,
-                        objectFit: "cover",
-                        border: "2px solid #000",
-                      }}
-                    />
-                  )}
+                  {image &&
+                    (hasImagePreview ? (
+                      <img
+                        src={image}
+                        alt={p.title}
+                        style={{
+                          width: "100%",
+                          height: 160,
+                          objectFit: "cover",
+                          border: "2px solid #000",
+                        }}
+                      />
+                    ) : (
+                      <a
+                        href={image}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="btn btn-sm btn-outline-dark w-100"
+                      >
+                        View attachment
+                      </a>
+                    ))}
                   <div className="mt-2">
                     <div className="fw-bold">{p.title}</div>
                     <div className="small text-muted">{p.category}</div>
