@@ -54,6 +54,12 @@ export default function MyPage() {
     );
   };
 
+  const openAttachment = (url?: string | null) => {
+    if (!url) return;
+    const win = window.open(url, "_blank", "noopener,noreferrer");
+    if (!win) alert("Please allow popups to view attachments.");
+  };
+
   const loadBookmarkedPosts = async () => {
   if (!user?.userId) return;
   try {
@@ -375,15 +381,14 @@ export default function MyPage() {
                               }}
                             />
                           ) : (
-                            <a
-                              href={p.imageUrl}
-                              target="_blank"
-                              rel="noreferrer"
+                            <button
+                              type="button"
                               className="btn btn-sm btn-outline-dark"
                               style={{ minWidth: 120 }}
+                              onClick={() => openAttachment(p.imageUrl)}
                             >
                               View attachment
-                            </a>
+                            </button>
                           )
                         ) : null}
                         <p className="small mb-0">{p.description}</p>
@@ -488,15 +493,14 @@ export default function MyPage() {
                                 }}
                               />
                             ) : (
-                              <a
-                                href={p.imageUrl}
-                                target="_blank"
-                                rel="noreferrer"
+                              <button
+                                type="button"
                                 className="btn btn-sm btn-outline-dark"
                                 style={{ minWidth: 120 }}
+                                onClick={() => openAttachment(p.imageUrl)}
                               >
                                 View attachment
-                              </a>
+                              </button>
                             )
                           ) : null}
                           <p className="small mb-0">{p.description}</p>

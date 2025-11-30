@@ -121,6 +121,12 @@ export default function Search() {
     );
   };
 
+  const openAttachment = (url?: string) => {
+    if (!url) return;
+    const win = window.open(url, "_blank", "noopener,noreferrer");
+    if (!win) alert("Please allow popups to view attachments.");
+  };
+
   const formatEventDateTime = (date?: string | null, time?: string | null) => {
     if (!date) return "";
     const dateStr = new Date(date).toLocaleDateString();
@@ -189,6 +195,7 @@ export default function Search() {
           (p) => !user?.userId || (p.userId !== user.userId && p.author?.id !== user.userId)
         );
         setPostResults(filtered);
+        setBookmarkedIds(new Set());
       }
     } catch (err: any) {
       setError(err?.message || "Something went wrong.");
@@ -240,22 +247,32 @@ export default function Search() {
 
   const showEmpty = hasSearched && !loading && !error && total === 0;
 
-  const handleBookmark = async (postId: string) => {
+  const handleBookmarkToggle = async (postId: string) => {
     if (!user?.userId) {
       alert("Please log in to bookmark posts.");
       return;
     }
+    const isBookmarked = bookmarkedIds.has(postId);
     try {
-      await postService.bookmarkPost(user.userId, postId);
-      setBookmarkedIds((prev) => {
-        const next = new Set(prev);
-        next.add(postId);
-        return next;
-      });
-      alert("Post bookmarked! You can see it on your My Page.");
+      if (isBookmarked) {
+        await postService.unbookmarkPost(user.userId, postId);
+        setBookmarkedIds((prev) => {
+          const next = new Set(prev);
+          next.delete(postId);
+          return next;
+        });
+      } else {
+        await postService.bookmarkPost(user.userId, postId);
+        setBookmarkedIds((prev) => {
+          const next = new Set(prev);
+          next.add(postId);
+          return next;
+        });
+        alert("Post bookmarked! You can see it on your My Page.");
+      }
     } catch (err) {
-      console.error("Failed to bookmark post", err);
-      alert("Failed to bookmark post. Please try again.");
+      console.error("Failed to toggle bookmark", err);
+      alert("Failed to update bookmark. Please try again.");
     }
   };
 
@@ -499,14 +516,13 @@ export default function Search() {
                         }}
                       />
                     ) : (
-                      <a
-                        href={image}
-                        target="_blank"
-                        rel="noreferrer"
+                      <button
+                        type="button"
                         className="btn btn-sm btn-outline-dark w-100"
+                        onClick={() => openAttachment(image)}
                       >
                         View attachment
-                      </a>
+                      </button>
                     ))}
                   <div className="mt-2">
                     <div className="fw-bold">{p.title}</div>
@@ -553,17 +569,15 @@ export default function Search() {
 
                     <button
                       type="button"
-                      className={`btn btn-sm mt-1 ${
-                        isBookmarked ? "btn-dark" : "btn-outline-dark"
-                      }`}
+                      className={`btn btn-sm mt-1 ${isBookmarked ? "" : "btn-outline-dark"}`}
                       style={
                         isBookmarked
                           ? { backgroundColor: "#F2E1C0", color: "#000", borderColor: "#000", fontWeight: 700 }
                           : undefined
                       }
-                      onClick={() => handleBookmark(p.id)}
+                      onClick={() => handleBookmarkToggle(p.id)}
                     >
-                      ★ Bookmark
+                      ★ {isBookmarked ? "Bookmarked" : "Bookmark"}
                     </button>
                   </div>
                 </div>
