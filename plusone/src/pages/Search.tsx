@@ -126,7 +126,11 @@ export default function Search() {
         url = `${API_BASE_URL}/posts/search?category=${category}&q=${encodeURIComponent(
           q
         )}&limit=24`;
-        const res = await fetch(url);
+        const token = localStorage.getItem("token");
+        const res = await fetch(url, {
+          credentials: "include", // <-- send session cookie
+          headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        });
         if (!res.ok) throw new Error(`Search failed (${res.status})`);
         const data: Post[] = await res.json();
         setPostResults(data);
@@ -155,7 +159,6 @@ export default function Search() {
       alert("Failed to bookmark post. Please try again.");
     }
   };
-
 
   return (
     <PageTemplate title="Search">
@@ -335,7 +338,7 @@ export default function Search() {
                   <div className="mt-2">
                     <div className="fw-bold">{p.title}</div>
                     <div className="small text-muted">{p.category}</div>
-                  <div className="small">{authorLabel}</div>
+                    <div className="small">{authorLabel}</div>
                     {p.createdAt && (
                       <div className="small text-muted">
                         {new Date(p.createdAt).toLocaleDateString()}
