@@ -20,7 +20,8 @@ public interface ConnectionRepository extends MongoRepository<Connection, String
     
     // Find specific connection between two users
     default Optional<Connection> findConnectionBetweenUsers(String userId1, String userId2) {
-        return findByUser1IdAndUser2IdOrUser1IdAndUser2Id(userId1, userId2, userId1, userId2);
+        // Check both directions (A-B or B-A)
+        return findByUser1IdAndUser2IdOrUser1IdAndUser2Id(userId1, userId2, userId2, userId1);
     }
     
     // Count total connections for a user (convenience method)
