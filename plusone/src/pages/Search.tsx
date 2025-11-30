@@ -4,6 +4,7 @@ import { postService } from "../services/postService";
 import { connectionService } from "../services/connectionService";
 import ConnectPopup from "../components/ConnectPopup";
 import { useEffect, useMemo, useState } from "react";
+import type { ProfileResponse } from "../types/profile";
 
 // Types
 // User type
@@ -24,6 +25,7 @@ type Post = {
   title: string;
   content?: string;
   description?: string;
+  userId?: string;
   category:
     | "EVENTS"
     | "JOB_OPPORTUNITIES"
@@ -34,6 +36,8 @@ type Post = {
   coverImageUrl?: string;
   imageUrl?: string;
   createdAt?: string;
+  eventDate?: string | null;
+  eventTime?: string | null;
 };
 
 type StoredUser = {
@@ -71,6 +75,9 @@ export default function Search() {
   );
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [showConnectPopup, setShowConnectPopup] = useState(false);
+  const [selectedProfile, setSelectedProfile] = useState<ProfileResponse | null>(null);
+  const [profileLoading, setProfileLoading] = useState(false);
+  const [profileError, setProfileError] = useState("");
 
   // current logged-in user (from localStorage)
   const user = useMemo<StoredUser | null>(() => {
@@ -111,6 +118,29 @@ export default function Search() {
       normalized.startsWith("data:image/") ||
       /\.(png|jpe?g|gif|webp|bmp|svg)$/.test(normalized)
     );
+  };
+
+  const formatEventDateTime = (date?: string | null, time?: string | null) => {
+    if (!date) return "";
+    const dateStr = new Date(date).toLocaleDateString();
+    const timeStr = time ? time.slice(0, 5) : "";
+    return timeStr ? `${dateStr} at ${timeStr}` : dateStr;
+  };
+
+  const openAuthorProfile = async (authorId?: string) => {
+    if (!authorId) return;
+    try {
+      setProfileLoading(true);
+      setProfileError("");
+      const profile = await postService.getProfile(authorId);
+      setSelectedProfile(profile);
+    } catch (err) {
+      console.error(err);
+      setProfileError("Failed to load profile.");
+      setSelectedProfile(null);
+    } finally {
+      setProfileLoading(false);
+    }
   };
 
   // Runs when you submit the form (Enter or button click)
@@ -154,7 +184,10 @@ export default function Search() {
         });
         if (!res.ok) throw new Error(`Search failed (${res.status})`);
         const data: Post[] = await res.json();
-        setPostResults(data);
+        const filtered = data.filter(
+          (p) => !user?.userId || (p.userId !== user.userId && p.author?.id !== user.userId)
+        );
+        setPostResults(filtered);
       }
     } catch (err: any) {
       setError(err?.message || "Something went wrong.");
@@ -439,9 +472,6 @@ export default function Search() {
             const authorName = [p.author?.firstName, p.author?.lastName]
               .filter(Boolean)
               .join(" ");
-            const authorLabel = authorName
-              ? `Posted by ${authorName}`
-              : "Posted by an unknown user";
             const hasImagePreview = isImageAttachment(image);
             return (
               <div key={p.id} className="col-12 col-md-6 col-lg-4">
@@ -474,10 +504,30 @@ export default function Search() {
                   <div className="mt-2">
                     <div className="fw-bold">{p.title}</div>
                     <div className="small text-muted">{p.category}</div>
-                    <div className="small">{authorLabel}</div>
+                    <div className="small">
+                      {authorName ? (
+                        <>
+                          Posted by{" "}
+                          <button
+                            type="button"
+                            className="btn btn-link p-0 align-baseline"
+                            onClick={() => openAuthorProfile(p.author?.id)}
+                          >
+                            {authorName}
+                          </button>
+                        </>
+                      ) : (
+                        "Posted by an unknown user"
+                      )}
+                    </div>
                     {p.createdAt && (
                       <div className="small text-muted">
-                        {new Date(p.createdAt).toLocaleDateString()}
+                        Date posted: {new Date(p.createdAt).toLocaleDateString()}
+                      </div>
+                    )}
+                    {p.category === "EVENTS" && p.eventDate && (
+                      <div className="small text-muted">
+                        Event date: {formatEventDateTime(p.eventDate, p.eventTime)}
                       </div>
                     )}
                     {blurb && (
@@ -523,6 +573,78 @@ export default function Search() {
             if (selectedId) markPending(selectedId);
           }}
         />
+      )}
+
+      {(selectedProfile || profileLoading || profileError) && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="d-flex align-items-center justify-content-center"
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.45)",
+            zIndex: 1050,
+            padding: "16px",
+          }}
+        >
+          <div
+            className="bg-white border border-2"
+            style={{ borderColor: "#000", maxWidth: 500, width: "100%", borderRadius: 8 }}
+          >
+            <div className="d-flex justify-content-between align-items-center px-3 py-2 border-bottom">
+              <div className="fw-bold">User Profile</div>
+              <button
+                type="button"
+                className="btn btn-sm btn-outline-dark"
+                onClick={() => {
+                  setSelectedProfile(null);
+                  setProfileError("");
+                }}
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="p-3" style={{ maxHeight: "60vh", overflowY: "auto" }}>
+              {profileLoading ? (
+                <div className="text-muted">Loading…</div>
+              ) : profileError ? (
+                <div className="alert alert-danger mb-0">{profileError}</div>
+              ) : selectedProfile ? (
+                <div className="vstack gap-2">
+                  <div className="fw-bold">
+                    {selectedProfile.firstName} {selectedProfile.lastName}
+                  </div>
+                  {selectedProfile.profile?.job?.title && (
+                    <div>
+                      <strong>Title:</strong> {selectedProfile.profile.job.title}
+                      {selectedProfile.profile.job.companiesName
+                        ? ` @ ${selectedProfile.profile.job.companiesName}`
+                        : ""}
+                    </div>
+                  )}
+                  {selectedProfile.profile?.interests?.length ? (
+                    <div className="d-flex flex-wrap gap-2">
+                      {selectedProfile.profile.interests.map((i) => (
+                        <span
+                          key={i}
+                          className="badge text-bg-light"
+                          style={{ border: "1px solid #000", fontWeight: 500 }}
+                        >
+                          {i}
+                        </span>
+                      ))}
+                    </div>
+                  ) : null}
+                  <div className="small text-muted">
+                    Connections: {selectedProfile.connectionsCount} • Posts: {selectedProfile.postsCount}
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          </div>
+        </div>
       )}
     </PageTemplate>
   );
