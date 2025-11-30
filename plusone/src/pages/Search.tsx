@@ -76,16 +76,19 @@ export default function Search() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [hasSearched, setHasSearched] = useState(false); // <-- track if a search ran
-  const [connectionStatuses, setConnectionStatuses] = useState<Record<string, string>>(
-    {}
-  );
+  const [connectionStatuses, setConnectionStatuses] = useState<
+    Record<string, string>
+  >({});
   const [bookmarkedIds, setBookmarkedIds] = useState<Set<string>>(new Set());
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [showConnectPopup, setShowConnectPopup] = useState(false);
-  const [selectedProfile, setSelectedProfile] = useState<ProfileResponse | null>(null);
+  const [selectedProfile, setSelectedProfile] =
+    useState<ProfileResponse | null>(null);
   const [profileLoading, setProfileLoading] = useState(false);
   const [profileError, setProfileError] = useState("");
-  const [currentProfile, setCurrentProfile] = useState<ProfileResponse | null>(null);
+  const [currentProfile, setCurrentProfile] = useState<ProfileResponse | null>(
+    null
+  );
 
   // current logged-in user (from localStorage)
   const user = useMemo<StoredUser | null>(() => {
@@ -144,12 +147,19 @@ export default function Search() {
     return timeStr ? `${dateStr} at ${timeStr}` : dateStr;
   };
 
-  const sameLocation = (a?: User["location"], b?: ProfileResponse["profile"]["location"]) => {
+  const sameLocation = (
+    a?: User["location"],
+    b?: ProfileResponse["profile"]["location"]
+  ) => {
     if (!a || !b) return false;
-    const cityMatch = a.city && b.city && a.city.toLowerCase() === b.city.toLowerCase();
-    const stateMatch = a.state && b.state && a.state.toLowerCase() === b.state.toLowerCase();
+    const cityMatch =
+      a.city && b.city && a.city.toLowerCase() === b.city.toLowerCase();
+    const stateMatch =
+      a.state && b.state && a.state.toLowerCase() === b.state.toLowerCase();
     const countryMatch =
-      a.country && b.country && a.country.toLowerCase() === b.country.toLowerCase();
+      a.country &&
+      b.country &&
+      a.country.toLowerCase() === b.country.toLowerCase();
     // Prefer strict city+state match when available; fall back to country
     if (cityMatch && stateMatch) return true;
     if (cityMatch && !b.state) return true;
@@ -235,7 +245,11 @@ export default function Search() {
       if (searchingUsers) {
         url = `${API_BASE_URL}/users/search?mode=${userMode}&q=${encodeURIComponent(
           q
-        )}&limit=24`;
+        )}&limit=24${
+          user?.userId
+            ? `&requestingUserId=${encodeURIComponent(user.userId)}`
+            : ""
+        }`;
         const token = localStorage.getItem("token"); // JWT
         const res = await fetch(url, {
           credentials: "include", // send session cookie
@@ -243,14 +257,20 @@ export default function Search() {
         });
         if (!res.ok) throw new Error(`Search failed (${res.status})`);
         const data: User[] = await res.json();
-        const roommateQuery = userMode === "interests" && q.toLowerCase().includes("room");
-        const filteredUsers = roommateQuery && currentProfile?.profile?.location
-          ? data.filter(
-              (u) =>
-                (u.lookingForRoommate ?? u.profile?.lookingForRoommate) &&
-                sameLocation(u.location || u.profile?.location, currentProfile.profile.location)
-            )
-          : data;
+        const roommateQuery =
+          userMode === "interests" && /(room|roommate|roomate)/i.test(q);
+
+        const filteredUsers =
+          roommateQuery && currentProfile?.profile?.location
+            ? data.filter((u) => {
+                const wantsRoommate = !!(
+                  u.lookingForRoommate ?? u.profile?.lookingForRoommate
+                );
+                if (!wantsRoommate) return false;
+                const userLoc = u.location || u.profile?.location;
+                return sameLocation(userLoc, currentProfile.profile.location);
+              })
+            : data;
         setUserResults(filteredUsers);
       } else {
         //searching posts
@@ -266,7 +286,9 @@ export default function Search() {
         if (!res.ok) throw new Error(`Search failed (${res.status})`);
         const data: Post[] = await res.json();
         const filtered = data.filter(
-          (p) => !user?.userId || (p.userId !== user.userId && p.author?.id !== user.userId)
+          (p) =>
+            !user?.userId ||
+            (p.userId !== user.userId && p.author?.id !== user.userId)
         );
         setPostResults(filtered);
       }
@@ -289,7 +311,8 @@ export default function Search() {
       const entries = await Promise.all(
         userResults.map(async (u) => {
           const userId = u.id || u.userId;
-          if (!userId || userId === user.userId) return [userId, "SELF"] as const;
+          if (!userId || userId === user.userId)
+            return [userId, "SELF"] as const;
           try {
             const status = await connectionService.getConnectionStatus(
               user.userId,
@@ -618,12 +641,14 @@ export default function Search() {
                     </div>
                     {p.createdAt && (
                       <div className="small text-muted">
-                        Date posted: {new Date(p.createdAt).toLocaleDateString()}
+                        Date posted:{" "}
+                        {new Date(p.createdAt).toLocaleDateString()}
                       </div>
                     )}
                     {p.category === "EVENTS" && p.eventDate && (
                       <div className="small text-muted">
-                        Event date: {formatEventDateTime(p.eventDate, p.eventTime)}
+                        Event date:{" "}
+                        {formatEventDateTime(p.eventDate, p.eventTime)}
                       </div>
                     )}
                     {blurb && (
@@ -642,10 +667,17 @@ export default function Search() {
 
                     <button
                       type="button"
-                      className={`btn btn-sm mt-1 ${isBookmarked ? "" : "btn-outline-dark"}`}
+                      className={`btn btn-sm mt-1 ${
+                        isBookmarked ? "" : "btn-outline-dark"
+                      }`}
                       style={
                         isBookmarked
-                          ? { backgroundColor: "#F2E1C0", color: "#000", borderColor: "#000", fontWeight: 700 }
+                          ? {
+                              backgroundColor: "#F2E1C0",
+                              color: "#000",
+                              borderColor: "#000",
+                              fontWeight: 700,
+                            }
                           : undefined
                       }
                       onClick={() => handleBookmarkToggle(p.id)}
@@ -691,7 +723,12 @@ export default function Search() {
         >
           <div
             className="bg-white border border-2"
-            style={{ borderColor: "#000", maxWidth: 500, width: "100%", borderRadius: 8 }}
+            style={{
+              borderColor: "#000",
+              maxWidth: 500,
+              width: "100%",
+              borderRadius: 8,
+            }}
           >
             <div className="d-flex justify-content-between align-items-center px-3 py-2 border-bottom">
               <div className="fw-bold">User Profile</div>
@@ -707,7 +744,10 @@ export default function Search() {
               </button>
             </div>
 
-            <div className="p-3" style={{ maxHeight: "60vh", overflowY: "auto" }}>
+            <div
+              className="p-3"
+              style={{ maxHeight: "60vh", overflowY: "auto" }}
+            >
               {profileLoading ? (
                 <div className="text-muted">Loading…</div>
               ) : profileError ? (
@@ -719,7 +759,8 @@ export default function Search() {
                   </div>
                   {selectedProfile.profile?.job?.title && (
                     <div>
-                      <strong>Title:</strong> {selectedProfile.profile.job.title}
+                      <strong>Title:</strong>{" "}
+                      {selectedProfile.profile.job.title}
                       {selectedProfile.profile.job.companiesName
                         ? ` @ ${selectedProfile.profile.job.companiesName}`
                         : ""}
@@ -739,7 +780,8 @@ export default function Search() {
                     </div>
                   ) : null}
                   <div className="small text-muted">
-                    Connections: {selectedProfile.connectionsCount} • Posts: {selectedProfile.postsCount}
+                    Connections: {selectedProfile.connectionsCount} • Posts:{" "}
+                    {selectedProfile.postsCount}
                   </div>
                 </div>
               ) : null}
