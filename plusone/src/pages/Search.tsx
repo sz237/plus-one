@@ -122,28 +122,8 @@ export default function Search() {
           headers: token ? { Authorization: `Bearer ${token}` } : undefined,
         });
         if (!res.ok) throw new Error(`Search failed (${res.status})`);
-        const raw: any[] = await res.json();
-        const normalized: User[] = raw
-          // hide the current user
-          .filter((r) => !user?.userId || r.id !== user.userId)
-          // surface nested fields so the UI always has what it expects
-          .map((r) => ({
-            ...r,
-            // profile photo nested at r.profile.profilePhoto.url
-            profilePhotoUrl: r.profile?.profilePhoto?.url ?? null,
-
-            job:
-              r.job ??
-              (r.profile?.job
-                ? {
-                    title: r.profile.job.title,
-                    companiesName: r.profile.job.companiesName,
-                  }
-                : undefined),
-            interests: r.interests ?? r.profile?.interests ?? [],
-          }));
-
-        setUserResults(normalized);
+        const data: User[] = await res.json();
+        setUserResults(data);
       } else {
         //searching posts
         const category = categoryMap[target];
