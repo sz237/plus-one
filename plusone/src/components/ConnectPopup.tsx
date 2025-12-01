@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { connectionService } from '../services/connectionService';
 
 interface CreateConnectionRequest {
@@ -23,6 +23,15 @@ export default function ConnectPopup({ isOpen, onClose, targetUser, currentUserI
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
+  // Reset form when modal opens/closes
+  useEffect(() => {
+    if (!isOpen) {
+      setMessage('');
+      setError('');
+      setIsLoading(false);
+    }
+  }, [isOpen]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -41,12 +50,18 @@ export default function ConnectPopup({ isOpen, onClose, targetUser, currentUserI
       };
 
       await connectionService.createConnectionRequest(currentUserId, request);
-      onSuccess();
-      onClose();
+      // Reset form state before closing
       setMessage('');
+      setError('');
+      setIsLoading(false);
+      // Close modal first
+      onClose();
+      // Call onSuccess after a brief delay to ensure modal closes first
+      setTimeout(() => {
+        onSuccess();
+      }, 100);
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to send connection request');
-    } finally {
       setIsLoading(false);
     }
   };

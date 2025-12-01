@@ -175,28 +175,74 @@ export default function MyPage() {
 
   const handleAcceptRequest = async (requestId: string) => {
     if (!user?.userId) return;
+    
+    // Optimistically update UI immediately
+    const requestToAccept = connectionRequests.find(r => r.id === requestId);
+    setConnectionRequests(prev => prev.filter(r => r.id !== requestId));
+    if (profile) {
+      setProfile(prev => prev ? {
+        ...prev,
+        connectionsCount: (prev.connectionsCount || 0) + 1,
+        requestsCount: Math.max(0, (prev.requestsCount || 0) - 1)
+      } : null);
+    }
+    
     try {
       await connectionService.acceptConnectionRequest(requestId, user.userId);
-      // Reload requests to update the list
+      // Reload data in background to ensure consistency
       loadConnectionRequests();
-      // Reload profile to update connection count
-      await reloadProfile();
+      reloadProfile();
     } catch (error) {
       console.error('Failed to accept request:', error);
+      // Revert optimistic update on error
+      if (requestToAccept) {
+        setConnectionRequests(prev => [...prev, requestToAccept].sort((a, b) => 
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        ));
+      }
+      if (profile) {
+        setProfile(prev => prev ? {
+          ...prev,
+          connectionsCount: Math.max(0, (prev.connectionsCount || 0) - 1),
+          requestsCount: (prev.requestsCount || 0) + 1
+        } : null);
+      }
       alert('Failed to accept request. Please try again.');
     }
   };
 
   const handleRejectRequest = async (requestId: string) => {
     if (!user?.userId) return;
+    
+    // Optimistically update UI immediately
+    const requestToReject = connectionRequests.find(r => r.id === requestId);
+    setConnectionRequests(prev => prev.filter(r => r.id !== requestId));
+    if (profile) {
+      setProfile(prev => prev ? {
+        ...prev,
+        requestsCount: Math.max(0, (prev.requestsCount || 0) - 1)
+      } : null);
+    }
+    
     try {
       await connectionService.rejectConnectionRequest(requestId, user.userId);
-      // Reload requests to update the list
+      // Reload data in background to ensure consistency
       loadConnectionRequests();
-      // Reload profile to update counts
-      await reloadProfile();
+      reloadProfile();
     } catch (error) {
       console.error('Failed to reject request:', error);
+      // Revert optimistic update on error
+      if (requestToReject) {
+        setConnectionRequests(prev => [...prev, requestToReject].sort((a, b) => 
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        ));
+      }
+      if (profile) {
+        setProfile(prev => prev ? {
+          ...prev,
+          requestsCount: (prev.requestsCount || 0) + 1
+        } : null);
+      }
       alert('Failed to reject request. Please try again.');
     }
   };
