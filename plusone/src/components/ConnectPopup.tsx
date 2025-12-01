@@ -22,6 +22,7 @@ export default function ConnectPopup({ isOpen, onClose, targetUser, currentUserI
   const [message, setMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [isClosing, setIsClosing] = useState(false);
 
   // Reset form when modal opens/closes
   useEffect(() => {
@@ -29,6 +30,7 @@ export default function ConnectPopup({ isOpen, onClose, targetUser, currentUserI
       setMessage('');
       setError('');
       setIsLoading(false);
+      setIsClosing(false);
     }
   }, [isOpen]);
 
@@ -51,16 +53,22 @@ export default function ConnectPopup({ isOpen, onClose, targetUser, currentUserI
 
       await connectionService.createConnectionRequest(currentUserId, request);
       
-      // Close modal and update status immediately
+      // Mark as closing and reset loading state IMMEDIATELY
+      setIsClosing(true);
       setIsLoading(false);
+      
+      // Reset form state
       setMessage('');
       setError('');
+      
+      // Close modal after state is reset
       onClose();
       
       // Update connection status after modal closes
       setTimeout(() => {
         onSuccess();
-      }, 100);
+        setIsClosing(false);
+      }, 50);
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to send connection request');
       setIsLoading(false);
@@ -128,9 +136,9 @@ export default function ConnectPopup({ isOpen, onClose, targetUser, currentUserI
               <button
                 type="submit"
                 className="btn btn-primary"
-                disabled={isLoading || !message.trim()}
+                disabled={isLoading || !message.trim() || isClosing}
               >
-                {isLoading ? 'Sending...' : 'Send Request'}
+                {isLoading && !isClosing ? 'Sending...' : 'Send Request'}
               </button>
             </div>
           </form>
