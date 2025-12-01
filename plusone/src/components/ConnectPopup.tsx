@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { connectionService } from '../services/connectionService';
 
 interface CreateConnectionRequest {
@@ -23,14 +23,22 @@ export default function ConnectPopup({ isOpen, onClose, targetUser, currentUserI
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [requestSent, setRequestSent] = useState(false);
+  const [buttonText, setButtonText] = useState('Send Request');
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Reset form when modal opens/closes
   useEffect(() => {
     if (!isOpen) {
+      // Clear any pending timeouts
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
+      }
       setMessage('');
       setError('');
       setIsLoading(false);
       setRequestSent(false);
+      setButtonText('Send Request');
     }
   }, [isOpen]);
 
@@ -53,11 +61,17 @@ export default function ConnectPopup({ isOpen, onClose, targetUser, currentUserI
 
       await connectionService.createConnectionRequest(currentUserId, request);
       
-      // Keep loading state for 2 seconds to show "Sending..."
-      // After 2 seconds, change to "Done"
-      setTimeout(() => {
+      // Request succeeded - keep showing "Sending..." for 2 seconds, then change to "Done"
+      // Clear any existing timeout
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+      
+      // After 2 seconds, change button to "Done"
+      timeoutRef.current = setTimeout(() => {
         setIsLoading(false);
         setRequestSent(true);
+        setButtonText('Done');
         setMessage('');
         setError('');
       }, 2000);
@@ -157,7 +171,7 @@ export default function ConnectPopup({ isOpen, onClose, targetUser, currentUserI
                   className="btn btn-primary"
                   onClick={handleDone}
                 >
-                  Done
+                  {buttonText}
                 </button>
               ) : (
                 <button
@@ -165,7 +179,7 @@ export default function ConnectPopup({ isOpen, onClose, targetUser, currentUserI
                   className="btn btn-primary"
                   disabled={isLoading || !message.trim()}
                 >
-                  {isLoading ? 'Sending...' : 'Send Request'}
+                  {isLoading ? 'Sending...' : buttonText}
                 </button>
               )}
               
