@@ -172,6 +172,9 @@ export default function UserProfileCard({ user, currentUserId, onConnectionUpdat
   };
 
   const handleConnectionSuccess = () => {
+    // Close modal FIRST before any other state updates
+    setShowConnectPopup(false);
+    
     // Set pending status and mark it as a local update
     pendingStatusUpdateRef.current = 'PENDING';
     setConnectionStatus('PENDING');

@@ -56,18 +56,11 @@ export default function ConnectPopup({ isOpen, onClose, targetUser, currentUserI
       setMessage('');
       setError('');
       
-      // IMPORTANT: Close modal FIRST, before any other operations
-      // This ensures the modal closes immediately
-      onClose();
+      // Update status - this will also close the modal
+      onSuccess();
       
-      // Update status after modal is closed (small delay to ensure modal closes first)
-      setTimeout(() => {
-        try {
-          onSuccess();
-        } catch (err) {
-          console.error('Error updating connection status:', err);
-        }
-      }, 50);
+      // Also explicitly close modal as backup
+      onClose();
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to send connection request');
       setIsLoading(false);
