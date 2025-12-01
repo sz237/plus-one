@@ -6,6 +6,12 @@ import { connectionService } from "../services/connectionService";
 import type { Post } from "../types/post";
 import type { ConnectionRequest } from "../types/connection";
 
+// Extended connection request type that includes sender information
+interface ConnectionRequestWithSender extends ConnectionRequest {
+  senderName?: string;
+  senderPhoto?: { url?: string | null };
+}
+
 //const GOLD = "#F2E1C0";
 
 export default function MyPage() {
@@ -24,7 +30,7 @@ export default function MyPage() {
   } | null>(null);
   const [posts, setPosts] = useState<Post[]>([]);
   const [bookmarkedPosts, setBookmarkedPosts] = useState<Post[]>([]);
-  const [connectionRequests, setConnectionRequests] = useState<ConnectionRequest[]>([]);
+  const [connectionRequests, setConnectionRequests] = useState<ConnectionRequestWithSender[]>([]);
   const [requestsLoading, setRequestsLoading] = useState(false);
   const [error, setError] = useState('');
   const [guestListModal, setGuestListModal] = useState<{
@@ -109,7 +115,30 @@ export default function MyPage() {
     try {
       setRequestsLoading(true);
       const requests = await connectionService.getPendingRequests(user.userId);
-      setConnectionRequests(requests);
+      
+      // Fetch sender information for each request
+      const requestsWithSenders = await Promise.all(
+        requests.map(async (request): Promise<ConnectionRequestWithSender> => {
+          try {
+            // Fetch sender's profile to get name and photo
+            const senderProfile = await postService.getProfile(request.fromUserId);
+            return {
+              ...request,
+              senderName: `${senderProfile.firstName} ${senderProfile.lastName}`,
+              senderPhoto: senderProfile.profile?.profilePhoto,
+            };
+          } catch (error) {
+            console.error(`Failed to load sender profile for ${request.fromUserId}:`, error);
+            // If profile fetch fails, still include the request but without sender info
+            return {
+              ...request,
+              senderName: "Unknown User",
+            };
+          }
+        })
+      );
+      
+      setConnectionRequests(requestsWithSenders);
     } catch (error) {
       console.error('Failed to load connection requests:', error);
     } finally {
@@ -314,9 +343,37 @@ export default function MyPage() {
                   {connectionRequests.map((request) => (
                     <div key={request.id} className="col-12 col-md-6">
                       <div className="p-3 border border-2" style={{ borderColor: "#000" }}>
-                        <div className="d-flex justify-content-between align-items-start mb-2">
-                          <div>
-                            <h6 className="mb-1">Connection Request</h6>
+                        <div className="d-flex align-items-start gap-3 mb-3">
+                          {/* Sender Avatar */}
+                          <div
+                            className="d-flex align-items-center justify-content-center flex-shrink-0"
+                            style={{
+                              width: 50,
+                              height: 50,
+                              borderRadius: "50%",
+                              border: "2px solid #000",
+                              background: "#efefef",
+                              overflow: "hidden",
+                            }}
+                          >
+                            {request.senderPhoto?.url ? (
+                              <img 
+                                src={request.senderPhoto.url} 
+                                alt={request.senderName || "Sender"}
+                                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                              />
+                            ) : (
+                              <span className="text-muted" style={{ fontSize: '18px' }}>
+                                {request.senderName?.charAt(0) || "?"}
+                              </span>
+                            )}
+                          </div>
+                          
+                          {/* Sender Info */}
+                          <div className="flex-grow-1">
+                            <h6 className="mb-1">
+                              {request.senderName || "Connection Request"}
+                            </h6>
                             <small className="text-muted">{timeAgo(request.createdAt)}</small>
                           </div>
                         </div>
