@@ -53,15 +53,15 @@ export default function ConnectPopup({ isOpen, onClose, targetUser, currentUserI
 
       await connectionService.createConnectionRequest(currentUserId, request);
       
-      // Mark that request was sent successfully
-      setRequestSent(true);
-      
       // Reset loading state immediately
       setIsLoading(false);
       setMessage('');
       setError('');
       
-      // Don't update status yet - wait for user to click "Done"
+      // After 2 seconds, change button to "Done"
+      setTimeout(() => {
+        setRequestSent(true);
+      }, 2000);
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to send connection request');
       setIsLoading(false);
@@ -81,12 +81,10 @@ export default function ConnectPopup({ isOpen, onClose, targetUser, currentUserI
   };
 
   const handleDone = () => {
-    // Refresh UI first (same pattern as MyPage)
+    // Close modal first to ensure it closes
+    onClose();
+    // Then refresh UI (same pattern as MyPage)
     onSuccess();
-    // Close modal after a brief delay to ensure refresh starts
-    setTimeout(() => {
-      onClose();
-    }, 100);
   };
 
   if (!isOpen) return null;
