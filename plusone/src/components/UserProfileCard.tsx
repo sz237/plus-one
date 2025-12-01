@@ -103,7 +103,6 @@ interface UserProfileCardProps {
 export default function UserProfileCard({ user, currentUserId, onConnectionUpdate, isFriend = false }: UserProfileCardProps) {
   const [connectionStatus, setConnectionStatus] = useState<string>('CONNECT');
   const [showConnectPopup, setShowConnectPopup] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   const [showInterestsTooltip, setShowInterestsTooltip] = useState(false);
   const pendingStatusUpdateRef = useRef<string | null>(null);
 

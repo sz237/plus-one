@@ -1,4 +1,4 @@
-import axios from "axios";
+import axios, { type AxiosRequestHeaders } from "axios";
 
 // Safely read Vite env vars (browser & dev)
 const viteBaseUrl =
@@ -37,10 +37,9 @@ const readToken = () => {
 api.interceptors.request.use((config) => {
   const token = readToken();
   if (token) {
-    config.headers = {
-      ...config.headers,
-      Authorization: `Bearer ${token}`,
-    };
+    const headers: AxiosRequestHeaders = (config.headers as AxiosRequestHeaders) || {};
+    headers.Authorization = `Bearer ${token}`;
+    config.headers = headers;
   }
   return config;
 });

@@ -1,6 +1,4 @@
 import '@testing-library/jest-dom';
-import { configure } from '@testing-library/react';
-configure({ asyncUtilTimeout: 3000 });
 
 // Polyfill TextEncoder/Decoder if missing (Node + jsdom)
 import { TextEncoder, TextDecoder } from 'node:util';

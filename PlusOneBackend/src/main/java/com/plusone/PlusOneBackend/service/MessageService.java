@@ -22,6 +22,7 @@ import com.plusone.PlusOneBackend.model.User;
 import com.plusone.PlusOneBackend.repository.ConversationRepository;
 import com.plusone.PlusOneBackend.repository.MessageRepository;
 import com.plusone.PlusOneBackend.repository.UserRepository;
+import com.plusone.PlusOneBackend.service.realtime.SseService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -31,6 +32,7 @@ public class MessageService {
     private final MessageRepository messageRepository;
     private final ConversationRepository conversationRepository;
     private final UserRepository userRepository;
+    private final SseService sseService;
 
     private String truncate(String body, int max) {
         if (body == null) return null;
@@ -117,7 +119,12 @@ public class MessageService {
         updateConversationMetadata(convo, message);
         conversationRepository.save(convo);
 
-        return toMessageResponse(message);
+        MessageResponse response = toMessageResponse(message);
+        sseService.sendToUsers(
+                convo.getParticipantIds(),
+                "message:new",
+                response);
+        return response;
     }
 
     public void markConversationRead(String currentUserId, String conversationId) {

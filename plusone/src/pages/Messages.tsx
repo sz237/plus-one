@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import PageTemplate from "../components/PageTemplate";
 import { connectionService, type UserProfile } from "../services/connectionService";
 import { messageService } from "../services/messageService";
 import type { ChatMessage, ConversationSummary } from "../types/message";
+import { API_BASE_URL, AUTH_TOKEN_KEY } from "../services/http";
 import "../styles/Messages.css";
 
 type StoredUser = {
@@ -43,8 +44,10 @@ export default function Messages() {
   const [pickerError, setPickerError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [pickerLoading, setPickerLoading] = useState(false);
+  const [liveError, setLiveError] = useState<string | null>(null);
 
   const threadEndRef = useRef<HTMLDivElement | null>(null);
+  const eventSourceRef = useRef<EventSource | null>(null);
 
   const selectedConversation = useMemo(
     () =>
@@ -52,6 +55,22 @@ export default function Messages() {
       null,
     [conversations, selectedConversationId]
   );
+
+  const refreshConversations = useCallback(async () => {
+    setConversationsLoading(true);
+    setError(null);
+    try {
+      const data = await messageService.listConversations();
+      setConversations(data);
+      if (data.length) {
+        setSelectedConversationId((current) => current ?? data[0].conversationId);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load conversations");
+    } finally {
+      setConversationsLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     if (!user?.userId) {
@@ -75,24 +94,8 @@ export default function Messages() {
       return;
     }
 
-    (async () => {
-      setConversationsLoading(true);
-      setError(null);
-      try {
-        const data = await messageService.listConversations();
-        setConversations(data);
-        if (data.length) {
-          setSelectedConversationId((current) => current ?? data[0].conversationId);
-        }
-      } catch (err) {
-        setError(
-          err instanceof Error ? err.message : "Failed to load conversations"
-        );
-      } finally {
-        setConversationsLoading(false);
-      }
-    })();
-  }, [navigate, user?.userId]);
+    refreshConversations();
+  }, [navigate, refreshConversations, user?.userId]);
 
   useEffect(() => {
     if (!user?.userId || !selectedConversationId) return;
@@ -131,6 +134,83 @@ export default function Messages() {
   useEffect(() => {
     threadEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  useEffect(() => {
+    if (!user?.userId) return;
+    const token = localStorage.getItem(AUTH_TOKEN_KEY);
+    if (!token) return;
+
+    const streamUrl = `${API_BASE_URL}/messages/stream?token=${encodeURIComponent(token)}`;
+    const es = new EventSource(streamUrl);
+    eventSourceRef.current = es;
+
+    const handleIncoming = async (incoming: ChatMessage) => {
+      if (
+        !incoming ||
+        (incoming.senderId !== user.userId && incoming.recipientId !== user.userId)
+      ) {
+        return;
+      }
+
+      if (selectedConversationId === incoming.conversationId) {
+        setMessages((prev) =>
+          prev.some((m) => m.id === incoming.id) ? prev : [...prev, incoming]
+        );
+      }
+
+      let updated = false;
+      setConversations((prev) => {
+        const existing = prev.find(
+          (c) => c.conversationId === incoming.conversationId
+        );
+        if (!existing) {
+          return prev;
+        }
+        updated = true;
+        const refreshed: ConversationSummary = {
+          ...existing,
+          lastMessagePreview: incoming.body,
+          lastMessageAt: incoming.sentAt,
+          hasUnread:
+            incoming.conversationId === selectedConversationId
+              ? false
+              : incoming.senderId !== user.userId,
+        };
+        const others = prev.filter(
+          (c) => c.conversationId !== incoming.conversationId
+        );
+        return [refreshed, ...others];
+      });
+
+      if (!updated) {
+        try {
+          await refreshConversations();
+        } catch {
+          /* ignore */
+        }
+      }
+    };
+
+    es.addEventListener("message:new", (event) => {
+      try {
+        const data = JSON.parse((event as MessageEvent).data) as ChatMessage;
+        handleIncoming(data);
+      } catch {
+        /* ignore parse errors */
+      }
+    });
+
+    es.onerror = () => {
+      setLiveError("Live updates unavailable (stream error)");
+    };
+
+    es.onopen = () => setLiveError(null);
+
+    return () => {
+      es.close();
+      eventSourceRef.current = null;
+    };
+  }, [refreshConversations, selectedConversationId, user?.userId]);
 
   if (!user?.userId) {
     return null;
@@ -406,6 +486,7 @@ export default function Messages() {
           )}
         </section>
       </div>
+      {liveError && <div className="alert alert-warning mt-3">{liveError}</div>}
       {error && <div className="alert alert-danger mt-3">{error}</div>}
     </PageTemplate>
   );
