@@ -170,10 +170,19 @@ public class PostService {
         ZonedDateTime startZdt = date.atTime(time).atZone(ZONE_CHICAGO);
         Duration duration = Duration.ofHours(1);
 
-        userRepository.findById(post.getUserId()).ifPresent(organizer -> {
-            if (attendee.getEmail() != null && organizer.getEmail() != null) {
-                emailService.sendEventInvite(attendee, organizer, post, startZdt, duration);
-            }
-        });
+        User organizer = userRepository.findById(post.getUserId()).orElse(null);
+        boolean attendeeIsOrganizer = organizer != null
+                && organizer.getId() != null
+                && organizer.getId().equals(attendee.getId());
+
+        // Always invite the attendee if we have their email, even if organizer record is missing.
+        if (attendee.getEmail() != null) {
+            emailService.sendEventInvite(attendee, organizer, post, startZdt, duration);
+        }
+
+        // Also invite the author so they have the event on their calendar (avoid duplicate if same person).
+        if (!attendeeIsOrganizer && organizer != null && organizer.getEmail() != null) {
+            emailService.sendEventInvite(organizer, organizer, post, startZdt, duration);
+        }
     }
 }

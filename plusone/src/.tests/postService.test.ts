@@ -62,6 +62,35 @@ describe('postService', () => {
     expect(apiMock.delete).toHaveBeenCalledWith('/posts/p1');
   });
 
+  it('rsvp/cancel rsvp -> hits RSVP endpoints with userId param and returns post', async () => {
+    const post = { id: 'p1', title: 'Event' };
+    (apiMock.post as jest.Mock).mockResolvedValueOnce({ data: post });
+    const rsvpResult = await postService.rsvp('p1', 'u1');
+    expect(apiMock.post).toHaveBeenCalledWith('/posts/p1/rsvp', null, {
+      params: { userId: 'u1' },
+    });
+    expect(rsvpResult).toEqual(post);
+
+    const updated = { id: 'p1', title: 'Event', rsvpUserIds: [] };
+    (apiMock.delete as jest.Mock).mockResolvedValueOnce({ data: updated });
+    const cancelResult = await postService.cancelRsvp('p1', 'u1');
+    expect(apiMock.delete).toHaveBeenCalledWith('/posts/p1/rsvp', {
+      params: { userId: 'u1' },
+    });
+    expect(cancelResult).toEqual(updated);
+  });
+
+  it('getRsvps -> GET /posts/:id/rsvps with requestingUserId', async () => {
+    const attendees = [{ id: 'a1', firstName: 'Ada', lastName: 'Lovelace' }];
+    (apiMock.get as jest.Mock).mockResolvedValueOnce({ data: attendees });
+
+    const out = await postService.getRsvps('post-123', 'author-1');
+    expect(apiMock.get).toHaveBeenCalledWith('/posts/post-123/rsvps', {
+      params: { requestingUserId: 'author-1' },
+    });
+    expect(out).toEqual(attendees);
+  });
+
   it('propagates errors from api', async () => {
     const err = new Error('boom');
     (apiMock.get as jest.Mock).mockRejectedValueOnce(err);

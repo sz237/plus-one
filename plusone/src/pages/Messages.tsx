@@ -269,6 +269,17 @@ export default function Messages() {
     }).format(date);
   };
 
+  const userFacingError = (msg: string | null) => {
+    if (!msg) return null;
+    return msg.toLowerCase().includes("network error")
+      ? "Unable to connect. Please try again."
+      : msg;
+  };
+
+  const conversationsError = userFacingError(error);
+  const threadErrorCopy = userFacingError(threadError);
+  const pickerErrorCopy = userFacingError(pickerError);
+
   return (
     <PageTemplate title="Messages">
       <div className="messages-layout">
@@ -298,9 +309,9 @@ export default function Messages() {
             {usersLoading && (
               <p className="text-center small mt-2 mb-0">Loading people…</p>
             )}
-            {pickerError && (
+            {pickerErrorCopy && (
               <div className="alert alert-danger small mb-0 mt-2">
-                {pickerError}
+                {pickerErrorCopy}
               </div>
             )}
           </header>
@@ -369,8 +380,8 @@ export default function Messages() {
                 </small>
               </header>
               <div className="message-scroll">
-                {threadError && (
-                  <div className="alert alert-danger">{threadError}</div>
+                {threadErrorCopy && (
+                  <div className="alert alert-danger">{threadErrorCopy}</div>
                 )}
                 {threadLoading && (
                   <p className="text-center text-muted">Loading…</p>
@@ -406,7 +417,9 @@ export default function Messages() {
           )}
         </section>
       </div>
-      {error && <div className="alert alert-danger mt-3">{error}</div>}
+      {conversationsError && (
+        <div className="alert alert-danger mt-3">{conversationsError}</div>
+      )}
     </PageTemplate>
   );
 }

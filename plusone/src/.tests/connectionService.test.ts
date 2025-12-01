@@ -65,6 +65,18 @@ describe('connectionService', () => {
     });
   });
 
+  test('getSameCityUsers', async () => {
+    const { connectionService } = loadService();
+    const list = [{ userId: 'u1' }];
+    getMock.mockResolvedValueOnce({ data: list });
+
+    const res = await connectionService.getSameCityUsers('me');
+    expect(getMock).toHaveBeenCalledWith('/connections/same-city', {
+      params: { currentUserId: 'me' },
+    });
+    expect(res).toBe(list);
+  });
+
   test('getFriends', async () => {
     const { connectionService } = loadService();
     const friends = [{ userId: 'f1' }];
