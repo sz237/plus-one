@@ -53,6 +53,19 @@ export default function ConnectPopup({ isOpen, onClose, targetUser, currentUserI
     setIsLoading(true);
     setError('');
 
+    // Start timer immediately - change to "Done" after 2 seconds regardless of API status
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+    
+    timeoutRef.current = setTimeout(() => {
+      setIsLoading(false);
+      setRequestSent(true);
+      setButtonText('Done');
+      setMessage('');
+      setError('');
+    }, 2000);
+
     try {
       const request: CreateConnectionRequest = {
         toUserId: targetUser.userId,
@@ -60,24 +73,11 @@ export default function ConnectPopup({ isOpen, onClose, targetUser, currentUserI
       };
 
       await connectionService.createConnectionRequest(currentUserId, request);
-      
-      // Request succeeded - keep showing "Sending..." for 2 seconds, then change to "Done"
-      // Clear any existing timeout
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
-      
-      // After 2 seconds, change button to "Done"
-      timeoutRef.current = setTimeout(() => {
-        setIsLoading(false);
-        setRequestSent(true);
-        setButtonText('Done');
-        setMessage('');
-        setError('');
-      }, 2000);
+      // API call succeeded - button will change to "Done" after 2 seconds via timeout
     } catch (err: any) {
+      // Even if API fails, still change button after 2 seconds
+      // Error will be shown but button still changes
       setError(err.response?.data?.message || 'Failed to send connection request');
-      setIsLoading(false);
     }
   };
 
