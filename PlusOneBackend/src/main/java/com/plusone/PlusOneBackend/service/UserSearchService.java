@@ -41,4 +41,24 @@ public class UserSearchService {
         return mongoTemplate.find(mongoQuery, User.class);
     }
 
+    public List<User> searchRoommatesByLocation(String query, int limit) {
+        String safe = Pattern.quote(query.trim());
+
+        Criteria locationMatches = new Criteria().orOperator(
+                Criteria.where("profile.location.city").regex(safe, "i"),
+                Criteria.where("profile.location.state").regex(safe, "i"),
+                Criteria.where("profile.location.country").regex(safe, "i")
+        );
+
+        Criteria criteria = new Criteria().andOperator(
+                Criteria.where("profile.lookingForRoommate").is(true),
+                locationMatches
+        );
+
+        Query mongoQuery = new Query(criteria)
+                .limit(Math.min(Math.max(limit, 1), 50));
+
+        return mongoTemplate.find(mongoQuery, User.class);
+    }
+
 }
