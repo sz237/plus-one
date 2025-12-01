@@ -41,8 +41,7 @@ public class PostService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found: " + userId));
 
-        // Optional: ensure post exists
-        postRepository.findById(postId)
+        Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new RuntimeException("Post not found: " + postId));
 
         List<String> bookmarks = user.getBookmarkedPostIds();
@@ -56,6 +55,11 @@ public class PostService {
         }
 
         userRepository.save(user);
+
+        // Treat bookmarking an event as an RSVP (adds to guest list + calendar invites).
+        if (isEventsCategory(post)) {
+            rsvpToEvent(userId, postId);
+        }
     }
 
     public void unbookmarkPost(String userId, String postId) {
@@ -65,6 +69,13 @@ public class PostService {
         List<String> bookmarks = user.getBookmarkedPostIds();
         if (bookmarks != null && bookmarks.remove(postId)) {
             userRepository.save(user);
+
+            // If this was an event, also cancel the RSVP so the guest list stays in sync.
+            postRepository.findById(postId).ifPresent(post -> {
+                if (isEventsCategory(post)) {
+                    cancelRsvp(userId, postId);
+                }
+            });
         }
     }
 

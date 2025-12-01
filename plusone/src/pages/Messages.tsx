@@ -269,16 +269,10 @@ export default function Messages() {
     }).format(date);
   };
 
-  const userFacingError = (msg: string | null) => {
-    if (!msg) return null;
-    return msg.toLowerCase().includes("network error")
-      ? "Unable to connect. Please try again."
-      : msg;
-  };
-
-  const conversationsError = userFacingError(error);
-  const threadErrorCopy = userFacingError(threadError);
-  const pickerErrorCopy = userFacingError(pickerError);
+  // Keep errors in state for logging/metrics, but do not surface to users.
+  const conversationsError = null;
+  const threadErrorCopy = null;
+  const pickerErrorCopy = null;
 
   return (
     <PageTemplate title="Messages">

@@ -19,6 +19,7 @@ import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -80,6 +81,46 @@ class PostServiceTest {
 
         verify(emailService, times(1)).sendEventInvite(eq(organizer), eq(organizer), eq(post), any(ZonedDateTime.class), eq(Duration.ofHours(1)));
         verifyNoMoreInteractions(emailService);
+    }
+
+    @Test
+    void bookmarkingEventAddsRsvpAndInvites() {
+        User user = User.builder().id("u1").email("user@example.com").bookmarkedPostIds(new ArrayList<>()).build();
+        User organizer = User.builder().id("org").email("org@example.com").build();
+        Post post = buildEventPost("post-3", organizer.getId());
+
+        when(userRepository.findById("u1")).thenReturn(Optional.of(user), Optional.of(user)); // bookmark + rsvp lookup
+        when(postRepository.findById("post-3")).thenReturn(Optional.of(post), Optional.of(post)); // bookmark + rsvp lookup
+        when(userRepository.findById("org")).thenReturn(Optional.of(organizer));
+        when(postRepository.save(post)).thenReturn(post);
+
+        postService.bookmarkPost("u1", "post-3");
+
+        assertTrue(user.getBookmarkedPostIds().contains("post-3"));
+        assertTrue(post.getRsvpUserIds().contains("u1"));
+        verify(emailService).sendEventInvite(eq(user), eq(organizer), eq(post), any(ZonedDateTime.class), eq(Duration.ofHours(1)));
+        verify(emailService).sendEventInvite(eq(organizer), eq(organizer), eq(post), any(ZonedDateTime.class), eq(Duration.ofHours(1)));
+    }
+
+    @Test
+    void unbookmarkEventCancelsRsvp() {
+        User user = User.builder()
+                .id("u1")
+                .email("user@example.com")
+                .bookmarkedPostIds(new ArrayList<>(List.of("post-4")))
+                .build();
+        User organizer = User.builder().id("org").email("org@example.com").build();
+        Post post = buildEventPost("post-4", organizer.getId());
+        post.getRsvpUserIds().add("u1");
+
+        when(userRepository.findById("u1")).thenReturn(Optional.of(user), Optional.of(user)); // unbookmark + cancelRsvp
+        when(postRepository.findById("post-4")).thenReturn(Optional.of(post), Optional.of(post)); // unbookmark + cancelRsvp
+        when(postRepository.save(post)).thenReturn(post);
+
+        postService.unbookmarkPost("u1", "post-4");
+
+        assertTrue(user.getBookmarkedPostIds().isEmpty());
+        assertTrue(post.getRsvpUserIds().isEmpty());
     }
 
     private Post buildEventPost(String id, String organizerId) {
