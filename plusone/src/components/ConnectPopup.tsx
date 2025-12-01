@@ -53,14 +53,13 @@ export default function ConnectPopup({ isOpen, onClose, targetUser, currentUserI
 
       await connectionService.createConnectionRequest(currentUserId, request);
       
-      // Reset loading state immediately
-      setIsLoading(false);
-      setMessage('');
-      setError('');
-      
-      // After 2 seconds, change button to "Done"
+      // Keep loading state for 2 seconds to show "Sending..."
+      // After 2 seconds, change to "Done"
       setTimeout(() => {
+        setIsLoading(false);
         setRequestSent(true);
+        setMessage('');
+        setError('');
       }, 2000);
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to send connection request');
@@ -169,6 +168,9 @@ export default function ConnectPopup({ isOpen, onClose, targetUser, currentUserI
                   {isLoading ? 'Sending...' : 'Send Request'}
                 </button>
               )}
+              
+              {/* Debug: Show state for troubleshooting */}
+              {/* isLoading: {isLoading ? 'true' : 'false'}, requestSent: {requestSent ? 'true' : 'false'} */}
             </div>
           </form>
         </div>
