@@ -98,9 +98,10 @@ interface UserProfileCardProps {
   currentUserId: string;
   onConnectionUpdate: () => void;
   isFriend?: boolean; // Optional prop to indicate this user is already a friend
+  compact?: boolean; // Optional prop for smaller compact version
 }
 
-export default function UserProfileCard({ user, currentUserId, onConnectionUpdate, isFriend = false }: UserProfileCardProps) {
+export default function UserProfileCard({ user, currentUserId, onConnectionUpdate, isFriend = false, compact = false }: UserProfileCardProps) {
   const [connectionStatus, setConnectionStatus] = useState<string>('CONNECT');
   const [showConnectPopup, setShowConnectPopup] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -222,18 +223,18 @@ export default function UserProfileCard({ user, currentUserId, onConnectionUpdat
 
   return (
     <>
-      <div className="col-12 col-md-4 mb-4">
+      <div className={compact ? "mb-3" : "col-12 col-md-4 mb-4"}>
         <div className="card h-100" style={{ border: '2px solid #000' }}>
-          <div className="card-body d-flex flex-column">
+          <div className="card-body d-flex flex-column" style={{ padding: compact ? '0.75rem' : undefined }}>
             {/* Avatar */}
-            <div className="text-center mb-3">
+            <div className="text-center" style={{ marginBottom: compact ? '0.5rem' : '1rem' }}>
               <div 
                 className="mx-auto rounded-circle d-flex align-items-center justify-content-center"
                 style={{ 
-                  width: '80px', 
-                  height: '80px', 
+                  width: compact ? '50px' : '80px', 
+                  height: compact ? '50px' : '80px', 
                   backgroundColor: '#f8f9fa',
-                  border: '3px solid #000'
+                  border: compact ? '2px solid #000' : '3px solid #000'
                 }}
               >
                 {user.profile.profilePhoto?.url ? (
@@ -244,7 +245,7 @@ export default function UserProfileCard({ user, currentUserId, onConnectionUpdat
                     style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                   />
                 ) : (
-                  <span className="text-muted" style={{ fontSize: '24px' }}>
+                  <span className="text-muted" style={{ fontSize: compact ? '16px' : '24px' }}>
                     {user.firstName.charAt(0)}{user.lastName.charAt(0)}
                   </span>
                 )}
@@ -252,22 +253,27 @@ export default function UserProfileCard({ user, currentUserId, onConnectionUpdat
             </div>
 
             {/* Name */}
-            <h5 className="card-title text-center mb-3">
+            <h5 className="card-title text-center" style={{ 
+              marginBottom: compact ? '0.5rem' : '1rem',
+              fontSize: compact ? '0.9rem' : undefined
+            }}>
               {user.firstName} {user.lastName}
             </h5>
 
             {/* Connect Button */}
-            <div className="text-center mb-3">
+            <div className="text-center" style={{ marginBottom: compact ? '0.5rem' : '1rem' }}>
               <button
-                className={`${getButtonClass()} px-4`}
+                className={`${getButtonClass()} ${compact ? 'btn-sm' : ''}`}
                 onClick={handleConnectClick}
                 disabled={connectionStatus !== 'CONNECT'}
                 style={{ 
-                  borderRadius: '20px',
+                  borderRadius: compact ? '15px' : '20px',
                   backgroundColor: connectionStatus === 'FRIENDS' ? '#28a745' : 
                                  connectionStatus === 'PENDING' ? '#ffc107' : '#007bff',
                   border: 'none',
-                  color: connectionStatus === 'PENDING' ? '#000' : '#fff'
+                  color: connectionStatus === 'PENDING' ? '#000' : '#fff',
+                  padding: compact ? '0.25rem 0.75rem' : undefined,
+                  fontSize: compact ? '0.75rem' : undefined
                 }}
               >
                 {getButtonText()}
@@ -294,7 +300,7 @@ export default function UserProfileCard({ user, currentUserId, onConnectionUpdat
                       style={{ 
                         backgroundColor: getInterestColor(index),
                         color: 'white',
-                        fontSize: '0.75rem'
+                        fontSize: compact ? '0.65rem' : '0.75rem'
                       }}
                     >
                       {interest}
@@ -303,7 +309,7 @@ export default function UserProfileCard({ user, currentUserId, onConnectionUpdat
                   {user.profile.interests.length > 3 && (
                     <span 
                       className="badge rounded-pill bg-secondary"
-                      style={{ cursor: 'help' }}
+                      style={{ cursor: 'help', fontSize: compact ? '0.65rem' : '0.75rem' }}
                     >
                       +{user.profile.interests.length - 3}
                     </span>
