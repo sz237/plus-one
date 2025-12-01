@@ -2,6 +2,72 @@ import { useState, useEffect } from 'react';
 import { connectionService } from '../services/connectionService';
 import ConnectPopup from './ConnectPopup';
 
+// Tooltip component for showing all interests
+function InterestsTooltip({ interests, show }: { interests: string[]; show: boolean }) {
+  if (!show || interests.length <= 3) return null;
+
+  return (
+    <div
+      className="interests-tooltip"
+      style={{
+        position: 'absolute',
+        bottom: '100%',
+        left: '50%',
+        transform: 'translateX(-50%)',
+        marginBottom: '8px',
+        backgroundColor: '#fff',
+        border: '2px solid #000',
+        borderRadius: '8px',
+        padding: '12px',
+        minWidth: '200px',
+        maxWidth: '300px',
+        maxHeight: '300px',
+        overflowY: 'auto',
+        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+        zIndex: 1000,
+        pointerEvents: 'none',
+      }}
+    >
+      <div className="fw-bold mb-2" style={{ fontSize: '0.875rem' }}>
+        All Interests:
+      </div>
+      <div className="d-flex flex-wrap gap-1">
+        {interests.map((interest, index) => {
+          const colors = ['#007bff', '#6f42c1', '#28a745', '#fd7e14'];
+          const color = colors[index % colors.length];
+          return (
+            <span
+              key={index}
+              className="badge rounded-pill"
+              style={{
+                backgroundColor: color,
+                color: 'white',
+                fontSize: '0.7rem',
+              }}
+            >
+              {interest}
+            </span>
+          );
+        })}
+      </div>
+      {/* Tooltip arrow */}
+      <div
+        style={{
+          position: 'absolute',
+          bottom: '-8px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          width: 0,
+          height: 0,
+          borderLeft: '8px solid transparent',
+          borderRight: '8px solid transparent',
+          borderTop: '8px solid #000',
+        }}
+      />
+    </div>
+  );
+}
+
 interface UserProfile {
   userId: string;
   firstName: string;
@@ -38,6 +104,7 @@ export default function UserProfileCard({ user, currentUserId, onConnectionUpdat
   const [connectionStatus, setConnectionStatus] = useState<string>('CONNECT');
   const [showConnectPopup, setShowConnectPopup] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [showInterestsTooltip, setShowInterestsTooltip] = useState(false);
 
   useEffect(() => {
     // If isFriend prop is true, set status directly without API call
@@ -153,7 +220,16 @@ export default function UserProfileCard({ user, currentUserId, onConnectionUpdat
 
             {/* Interests */}
             {user.profile.interests && user.profile.interests.length > 0 && (
-              <div className="mt-auto">
+              <div 
+                className="mt-auto"
+                style={{ position: 'relative' }}
+                onMouseEnter={() => {
+                  if (user.profile.interests && user.profile.interests.length > 3) {
+                    setShowInterestsTooltip(true);
+                  }
+                }}
+                onMouseLeave={() => setShowInterestsTooltip(false)}
+              >
                 <div className="d-flex flex-wrap gap-1 justify-content-center">
                   {user.profile.interests.slice(0, 3).map((interest, index) => (
                     <span
@@ -169,11 +245,18 @@ export default function UserProfileCard({ user, currentUserId, onConnectionUpdat
                     </span>
                   ))}
                   {user.profile.interests.length > 3 && (
-                    <span className="badge rounded-pill bg-secondary">
+                    <span 
+                      className="badge rounded-pill bg-secondary"
+                      style={{ cursor: 'help' }}
+                    >
                       +{user.profile.interests.length - 3}
                     </span>
                   )}
                 </div>
+                <InterestsTooltip 
+                  interests={user.profile.interests} 
+                  show={showInterestsTooltip}
+                />
               </div>
             )}
           </div>
