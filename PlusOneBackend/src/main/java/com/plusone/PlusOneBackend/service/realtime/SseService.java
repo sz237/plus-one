@@ -1,7 +1,6 @@
 package com.plusone.PlusOneBackend.service.realtime;
 
 import java.io.IOException;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -11,6 +10,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
@@ -20,7 +20,8 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 @Service
 public class SseService {
 
-    private static final long DEFAULT_TIMEOUT = Duration.ofMinutes(30).toMillis();
+    // 0L = no timeout; rely on client reconnect + heartbeat to keep alive through proxies.
+    private static final long DEFAULT_TIMEOUT = 0L;
 
     private final Map<String, Set<SseEmitter>> emitters = new ConcurrentHashMap<>();
     private final AtomicLong eventId = new AtomicLong();
@@ -77,5 +78,20 @@ public class SseService {
         if (userEmitters != null) {
             userEmitters.remove(emitter);
         }
+    }
+
+    @Scheduled(fixedRateString = "${app.sse.heartbeat-ms:20000}")
+    public void sendHeartbeats() {
+        emitters.forEach((userId, userEmitters) -> {
+            List<SseEmitter> dead = new ArrayList<>();
+            for (SseEmitter emitter : userEmitters) {
+                try {
+                    emitter.send(SseEmitter.event().name("heartbeat").data("ping"));
+                } catch (IOException e) {
+                    dead.add(emitter);
+                }
+            }
+            dead.forEach(emitter -> removeEmitter(userId, emitter));
+        });
     }
 }
