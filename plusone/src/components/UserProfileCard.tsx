@@ -172,14 +172,13 @@ export default function UserProfileCard({ user, currentUserId, onConnectionUpdat
   };
 
   const handleConnectionSuccess = () => {
-    // Close modal FIRST before any other state updates
-    setShowConnectPopup(false);
-    
     // Set pending status and mark it as a local update
     pendingStatusUpdateRef.current = 'PENDING';
     setConnectionStatus('PENDING');
     // Signal that connections have changed (for Home page refresh)
     localStorage.setItem('connectionChanged', 'true');
+    // Also refresh users list if onConnectionUpdate is available
+    onConnectionUpdate();
     // After a delay, verify status with backend
     setTimeout(async () => {
       pendingStatusUpdateRef.current = null;

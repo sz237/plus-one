@@ -22,6 +22,7 @@ export default function ConnectPopup({ isOpen, onClose, targetUser, currentUserI
   const [message, setMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [requestSent, setRequestSent] = useState(false);
 
   // Reset form when modal opens/closes
   useEffect(() => {
@@ -29,6 +30,7 @@ export default function ConnectPopup({ isOpen, onClose, targetUser, currentUserI
       setMessage('');
       setError('');
       setIsLoading(false);
+      setRequestSent(false);
     }
   }, [isOpen]);
 
@@ -51,6 +53,9 @@ export default function ConnectPopup({ isOpen, onClose, targetUser, currentUserI
 
       await connectionService.createConnectionRequest(currentUserId, request);
       
+      // Mark that request was sent successfully
+      setRequestSent(true);
+      
       // Reset loading state immediately
       setIsLoading(false);
       setMessage('');
@@ -58,9 +63,6 @@ export default function ConnectPopup({ isOpen, onClose, targetUser, currentUserI
       
       // Update status - this will also close the modal
       onSuccess();
-      
-      // Also explicitly close modal as backup
-      onClose();
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to send connection request');
       setIsLoading(false);
@@ -70,6 +72,12 @@ export default function ConnectPopup({ isOpen, onClose, targetUser, currentUserI
   const handleClose = () => {
     setMessage('');
     setError('');
+    
+    // If a request was sent, refresh the UI when closing
+    if (requestSent) {
+      onSuccess();
+    }
+    
     onClose();
   };
 
