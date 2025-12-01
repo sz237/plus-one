@@ -1,5 +1,5 @@
 import PageTemplate from "../components/PageTemplate";
-import { API_BASE_URL } from "../services/http"; // shared base URL from env/default
+import { API_BASE_URL, AUTH_TOKEN_KEY } from "../services/http"; // shared base URL from env/default
 import { postService } from "../services/postService";
 import { connectionService } from "../services/connectionService";
 import ConnectPopup from "../components/ConnectPopup";
@@ -232,7 +232,7 @@ export default function Search() {
         url = `${API_BASE_URL}/users/search?mode=${userMode}&q=${encodeURIComponent(
           q
         )}&limit=24`;
-        const token = localStorage.getItem("token"); // JWT
+        const token = localStorage.getItem(AUTH_TOKEN_KEY); // JWT
         const res = await fetch(url, {
           credentials: "include", // send session cookie
           headers: token ? { Authorization: `Bearer ${token}` } : undefined,
@@ -254,7 +254,7 @@ export default function Search() {
         url = `${API_BASE_URL}/posts/search?category=${category}&q=${encodeURIComponent(
           q
         )}&limit=24`;
-        const token = localStorage.getItem("token");
+        const token = localStorage.getItem(AUTH_TOKEN_KEY);
         const res = await fetch(url, {
           credentials: "include", // send session cookie
           headers: token ? { Authorization: `Bearer ${token}` } : undefined,
