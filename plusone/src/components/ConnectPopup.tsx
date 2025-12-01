@@ -50,13 +50,14 @@ export default function ConnectPopup({ isOpen, onClose, targetUser, currentUserI
       };
 
       await connectionService.createConnectionRequest(currentUserId, request);
-      // Reset form state before closing
+      
+      // Close modal and update status immediately
+      setIsLoading(false);
       setMessage('');
       setError('');
-      setIsLoading(false);
-      // Close modal first
       onClose();
-      // Call onSuccess after a brief delay to ensure modal closes first
+      
+      // Update connection status after modal closes
       setTimeout(() => {
         onSuccess();
       }, 100);

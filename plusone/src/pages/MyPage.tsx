@@ -189,6 +189,8 @@ export default function MyPage() {
     
     try {
       await connectionService.acceptConnectionRequest(requestId, user.userId);
+      // Signal that connections have changed for Home page refresh
+      localStorage.setItem('connectionChanged', 'true');
       // Reload data in background to ensure consistency
       loadConnectionRequests();
       reloadProfile();
@@ -226,6 +228,8 @@ export default function MyPage() {
     
     try {
       await connectionService.rejectConnectionRequest(requestId, user.userId);
+      // Signal that connections have changed for Home page refresh
+      localStorage.setItem('connectionChanged', 'true');
       // Reload data in background to ensure consistency
       loadConnectionRequests();
       reloadProfile();

@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import { useLocation } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
 import UserProfileCard from "../components/UserProfileCard";
 import { connectionService } from "../services/connectionService";
@@ -29,6 +30,7 @@ interface UserProfile {
 }
 
 function Home() {
+  const location = useLocation();
   const [navOpen, setNavOpen] = useState(false);
   const [suggestedUsers, setSuggestedUsers] = useState<UserProfile[]>([]);
   const [friends, setFriends] = useState<UserProfile[]>([]);
@@ -45,10 +47,51 @@ function Home() {
     }
   })();
 
+  // Load users on mount
   useEffect(() => {
     if (user?.userId) {
       loadUsers();
     }
+  }, [user?.userId]);
+
+  // Refresh when navigating to this page (detect route changes)
+  const prevPathRef = useRef<string>('');
+  useEffect(() => {
+    if (location.pathname === '/home' && user?.userId) {
+      // Check if we just navigated to this page (pathname changed to /home)
+      const justNavigated = prevPathRef.current !== '/home' && location.pathname === '/home';
+      if (prevPathRef.current) { // Only update after first render
+        prevPathRef.current = location.pathname;
+      } else {
+        prevPathRef.current = location.pathname;
+      }
+      
+      // Check if connections changed
+      const connectionChanged = localStorage.getItem('connectionChanged');
+      if (connectionChanged === 'true') {
+        localStorage.removeItem('connectionChanged');
+        loadUsers();
+      } else if (justNavigated) {
+        // Also reload when just navigated here to ensure fresh data
+        loadUsers();
+      }
+    }
+  }, [location.pathname, user?.userId]);
+
+  // Also check when window gains focus
+  useEffect(() => {
+    const handleFocus = () => {
+      const connectionChanged = localStorage.getItem('connectionChanged');
+      if (connectionChanged === 'true' && user?.userId) {
+        localStorage.removeItem('connectionChanged');
+        loadUsers();
+      }
+    };
+
+    window.addEventListener('focus', handleFocus);
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+    };
   }, [user?.userId]);
 
   const loadUsers = async () => {

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { connectionService } from '../services/connectionService';
 import ConnectPopup from './ConnectPopup';
 
@@ -105,24 +105,63 @@ export default function UserProfileCard({ user, currentUserId, onConnectionUpdat
   const [showConnectPopup, setShowConnectPopup] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [showInterestsTooltip, setShowInterestsTooltip] = useState(false);
+  const pendingStatusUpdateRef = useRef<string | null>(null);
 
   useEffect(() => {
     // If isFriend prop is true, set status directly without API call
     if (isFriend) {
       setConnectionStatus('FRIENDS');
+      pendingStatusUpdateRef.current = null;
     } else {
-      loadConnectionStatus();
+      // Only reload status if we don't have a pending local update
+      if (!pendingStatusUpdateRef.current) {
+        loadConnectionStatus();
+      } else {
+        // Keep the pending status and clear the ref after a delay
+        setConnectionStatus(pendingStatusUpdateRef.current);
+        setTimeout(() => {
+          pendingStatusUpdateRef.current = null;
+          loadConnectionStatus();
+        }, 1000);
+      }
     }
   }, [user.userId, currentUserId, isFriend]);
 
+  // Listen for storage events to update status when connection changes happen on other pages
+  useEffect(() => {
+    const handleStorageChange = () => {
+      if (!isFriend && !pendingStatusUpdateRef.current) {
+        // Reload status when connections change elsewhere, but not if we have a pending update
+        loadConnectionStatus();
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    // Also check on focus in case changes happened in same tab
+    window.addEventListener('focus', handleStorageChange);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('focus', handleStorageChange);
+    };
+  }, [isFriend, user.userId, currentUserId]);
+
   const loadConnectionStatus = async () => {
+    // Don't reload if we have a pending local status update
+    if (pendingStatusUpdateRef.current) {
+      return;
+    }
     try {
       const status = await connectionService.getConnectionStatus(currentUserId, user.userId);
       setConnectionStatus(status);
+      // Clear any pending status if we got a valid status from backend
+      pendingStatusUpdateRef.current = null;
     } catch (error) {
       console.error('Failed to load connection status:', error);
-      // Set a default status if API call fails
-      setConnectionStatus('CONNECT');
+      // Set a default status if API call fails (only if no pending update)
+      if (!pendingStatusUpdateRef.current) {
+        setConnectionStatus('CONNECT');
+      }
     }
   };
 
@@ -133,8 +172,21 @@ export default function UserProfileCard({ user, currentUserId, onConnectionUpdat
   };
 
   const handleConnectionSuccess = () => {
+    // Set pending status and mark it as a local update
+    pendingStatusUpdateRef.current = 'PENDING';
     setConnectionStatus('PENDING');
-    onConnectionUpdate();
+    // Signal that connections have changed (for Home page refresh)
+    localStorage.setItem('connectionChanged', 'true');
+    // After a delay, verify status with backend
+    setTimeout(async () => {
+      pendingStatusUpdateRef.current = null;
+      try {
+        const status = await connectionService.getConnectionStatus(currentUserId, user.userId);
+        setConnectionStatus(status);
+      } catch (error) {
+        console.error('Failed to verify connection status:', error);
+      }
+    }, 2000);
   };
 
   const getButtonText = () => {
