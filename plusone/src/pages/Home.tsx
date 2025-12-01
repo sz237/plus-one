@@ -204,75 +204,92 @@ function Home() {
           </div>
         ) : (
           <>
-            {/* Suggested Users Section */}
-            <div className="mb-5">
-              <h2 className="h5 mb-3">People you might want to connect with</h2>
-              <div className="row">
-                <div className="col-12 col-lg-8">
+            <div className="row">
+              {/* Main area - reserved for events */}
+              <div className="col-12 col-lg-8">
+                {/* Events will go here later */}
+              </div>
+
+              {/* Right sidebar with two boxes */}
+              <div className="col-12 col-lg-4 mt-3 mt-lg-0">
+                {/* Suggested Users Box - first box */}
+                <div
+                  className="border border-2 p-3 mb-3"
+                  style={{ borderColor: "#000", maxHeight: 420, overflowY: "auto" }}
+                >
+                  <div className="d-flex justify-content-between align-items-center mb-2">
+                    <h3 className="h6 mb-0">People you might want to connect with</h3>
+                    {suggestedUsers.length > 0 && (
+                      <span className="badge text-bg-light" style={{ border: "1px solid #000" }}>
+                        {suggestedUsers.length}
+                      </span>
+                    )}
+                  </div>
                   {suggestedUsers.length === 0 ? (
-                    <p className="text-muted">You are already friends with everyone on the platform.</p>
+                    <p className="text-muted small">You are already friends with everyone on the platform.</p>
                   ) : (
-                    <div className="row">
+                    <div>
                       {suggestedUsers.map((userProfile) => (
                         <UserProfileCard
                           key={userProfile.userId}
                           user={userProfile}
                           currentUserId={user.userId}
                           onConnectionUpdate={handleConnectionUpdate}
+                          compact={true}
                         />
                       ))}
                     </div>
                   )}
                 </div>
-                <div className="col-12 col-lg-4 mt-3 mt-lg-0">
-                  <div
-                    className="border border-2 p-3 h-100"
-                    style={{ borderColor: "#000", maxHeight: 420, overflowY: "auto" }}
-                  >
-                    <div className="d-flex justify-content-between align-items-center mb-2">
-                      <h3 className="h6 mb-0">Near you</h3>
-                      {sameCityUsers.length > 0 && (
-                        <span className="badge text-bg-light" style={{ border: "1px solid #000" }}>
-                          {sameCityUsers.length}
-                        </span>
-                      )}
-                    </div>
-                    {sameCityError ? (
-                      <div className="text-danger small mb-0">{sameCityError}</div>
-                    ) : sameCityUsers.length === 0 ? (
-                      <div className="text-muted small">No other users in your city yet.</div>
-                    ) : (
-                      sameCityUsers.map((u) => (
-                        <div key={u.userId} className="d-flex align-items-start justify-content-between py-2 border-bottom">
-                          <div>
-                            <div className="fw-semibold small">
-                              {u.firstName} {u.lastName}
-                            </div>
-                            <div className="text-muted small">
-                              {u.profile?.job?.title || "—"}
-                              {u.profile?.job?.companiesName ? ` @ ${u.profile.job.companiesName}` : ""}
-                            </div>
-                          </div>
-                          <button
-                            className="btn btn-outline-dark btn-sm"
-                            onClick={async () => {
-                              try {
-                                await connectionService.createConnectionRequest(user.userId, {
-                                  toUserId: u.userId,
-                                  message: "",
-                                });
-                                handleConnectionUpdate();
-                              } catch (err) {
-                                console.error("Failed to send request", err);
-                              }
-                            }}
-                          >
-                            Connect
-                          </button>
-                        </div>
-                      ))
+
+                {/* Near you Box - second box */}
+                <div
+                  className="border border-2 p-3"
+                  style={{ borderColor: "#000", maxHeight: 420, overflowY: "auto" }}
+                >
+                  <div className="d-flex justify-content-between align-items-center mb-2">
+                    <h3 className="h6 mb-0">Near you</h3>
+                    {sameCityUsers.length > 0 && (
+                      <span className="badge text-bg-light" style={{ border: "1px solid #000" }}>
+                        {sameCityUsers.length}
+                      </span>
                     )}
                   </div>
+                  {sameCityError ? (
+                    <div className="text-danger small mb-0">{sameCityError}</div>
+                  ) : sameCityUsers.length === 0 ? (
+                    <div className="text-muted small">No other users in your city yet.</div>
+                  ) : (
+                    sameCityUsers.map((u) => (
+                      <div key={u.userId} className="d-flex align-items-start justify-content-between py-2 border-bottom">
+                        <div>
+                          <div className="fw-semibold small">
+                            {u.firstName} {u.lastName}
+                          </div>
+                          <div className="text-muted small">
+                            {u.profile?.job?.title || "—"}
+                            {u.profile?.job?.companiesName ? ` @ ${u.profile.job.companiesName}` : ""}
+                          </div>
+                        </div>
+                        <button
+                          className="btn btn-outline-dark btn-sm"
+                          onClick={async () => {
+                            try {
+                              await connectionService.createConnectionRequest(user.userId, {
+                                toUserId: u.userId,
+                                message: "",
+                              });
+                              handleConnectionUpdate();
+                            } catch (err) {
+                              console.error("Failed to send request", err);
+                            }
+                          }}
+                        >
+                          Connect
+                        </button>
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
             </div>
