@@ -175,9 +175,11 @@ export default function UserProfileCard({ user, currentUserId, onConnectionUpdat
     // Set pending status and mark it as a local update
     pendingStatusUpdateRef.current = 'PENDING';
     setConnectionStatus('PENDING');
-    // Signal that connections have changed (for Home page refresh)
+    // Signal that connections have changed for Home page refresh (same as MyPage)
     localStorage.setItem('connectionChanged', 'true');
-    // Also refresh users list if onConnectionUpdate is available
+    // Trigger a storage event to notify Home page (same pattern as MyPage)
+    window.dispatchEvent(new Event('storage'));
+    // Refresh users list immediately (same pattern as MyPage - call update function directly)
     onConnectionUpdate();
     // After a delay, verify status with backend
     setTimeout(async () => {

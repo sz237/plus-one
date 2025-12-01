@@ -81,9 +81,12 @@ export default function ConnectPopup({ isOpen, onClose, targetUser, currentUserI
   };
 
   const handleDone = () => {
-    // Refresh UI and close modal
+    // Refresh UI first (same pattern as MyPage)
     onSuccess();
-    onClose();
+    // Close modal after a brief delay to ensure refresh starts
+    setTimeout(() => {
+      onClose();
+    }, 100);
   };
 
   if (!isOpen) return null;
