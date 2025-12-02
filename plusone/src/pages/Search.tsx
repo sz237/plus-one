@@ -1,5 +1,5 @@
 import PageTemplate from "../components/PageTemplate";
-import { API_BASE_URL } from "../services/http"; // shared base URL from env/default
+import { API_BASE_URL, AUTH_TOKEN_KEY } from "../services/http"; // shared base URL from env/default
 import { postService } from "../services/postService";
 import { connectionService } from "../services/connectionService";
 import ConnectPopup from "../components/ConnectPopup";
@@ -18,6 +18,7 @@ type User = {
   numConnections?: number;
   profilePhotoUrl?: string;
   location?: { city?: string; state?: string; country?: string };
+  profile?: { location?: { city?: string; state?: string; country?: string } };
   lookingForRoommate?: boolean | null;
 };
 
@@ -53,7 +54,7 @@ type StoredUser = {
 type Target = "users" | "events" | "jobs" | "internships" | "housing" | "other";
 
 // Are we searching users by interested or by their name?
-type UserMode = "interests" | "name";
+type UserMode = "interests" | "name" | "roommate";
 
 // Search React Component
 export default function Search() {
@@ -81,7 +82,6 @@ export default function Search() {
   const [selectedProfile, setSelectedProfile] = useState<ProfileResponse | null>(null);
   const [profileLoading, setProfileLoading] = useState(false);
   const [profileError, setProfileError] = useState("");
-  const [currentProfile, setCurrentProfile] = useState<ProfileResponse | null>(null);
 
   // current logged-in user (from localStorage)
   const user = useMemo<StoredUser | null>(() => {
@@ -104,6 +104,8 @@ export default function Search() {
     t === "users"
       ? userMode === "name"
         ? "Users (by name)"
+        : userMode === "roommate"
+        ? "Users (roommates by location)"
         : "Users (by interests)"
       : t === "events"
       ? "Events"
@@ -140,17 +142,15 @@ export default function Search() {
     return timeStr ? `${dateStr} at ${timeStr}` : dateStr;
   };
 
-  const sameLocation = (a?: User["location"], b?: ProfileResponse["profile"]["location"]) => {
-    if (!a || !b) return false;
-    const cityMatch = a.city && b.city && a.city.toLowerCase() === b.city.toLowerCase();
-    const stateMatch = a.state && b.state && a.state.toLowerCase() === b.state.toLowerCase();
-    const countryMatch =
-      a.country && b.country && a.country.toLowerCase() === b.country.toLowerCase();
-    // Prefer strict city+state match when available; fall back to country
-    if (cityMatch && stateMatch) return true;
-    if (cityMatch && !b.state) return true;
-    if (stateMatch && !b.city) return true;
-    return countryMatch;
+  const getUserLocation = (u: User) =>
+    u.location || u.profile?.location || undefined;
+
+  const locationMatchesQuery = (location: User["location"], q: string) => {
+    if (!location) return false;
+    const queryLower = q.toLowerCase();
+    return [location.city, location.state, location.country].some((part) =>
+      part ? part.toLowerCase().includes(queryLower) : false
+    );
   };
 
   const openAuthorProfile = async (authorId?: string) => {
@@ -191,27 +191,6 @@ export default function Search() {
     };
   }, [user?.userId]);
 
-  // Load current user's profile for location-based roommate filtering
-  useEffect(() => {
-    let cancelled = false;
-    const loadProfile = async () => {
-      if (!user?.userId) {
-        setCurrentProfile(null);
-        return;
-      }
-      try {
-        const res = await postService.getProfile(user.userId);
-        if (!cancelled) setCurrentProfile(res);
-      } catch (err) {
-        console.error("Failed to load current profile", err);
-      }
-    };
-    loadProfile();
-    return () => {
-      cancelled = true;
-    };
-  }, [user?.userId]);
-
   // Runs when you submit the form (Enter or button click)
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault(); // don’t reload the page
@@ -232,21 +211,21 @@ export default function Search() {
         url = `${API_BASE_URL}/users/search?mode=${userMode}&q=${encodeURIComponent(
           q
         )}&limit=24`;
-        const token = localStorage.getItem("token"); // JWT
+        const token = localStorage.getItem(AUTH_TOKEN_KEY); // JWT
         const res = await fetch(url, {
           credentials: "include", // send session cookie
           headers: token ? { Authorization: `Bearer ${token}` } : undefined,
         });
         if (!res.ok) throw new Error(`Search failed (${res.status})`);
         const data: User[] = await res.json();
-        const roommateQuery = userMode === "interests" && q.toLowerCase().includes("room");
-        const filteredUsers = roommateQuery && currentProfile?.profile?.location
-          ? data.filter(
-              (u) =>
-                u.lookingForRoommate &&
-                sameLocation(u.location, currentProfile.profile.location)
-            )
-          : data;
+        const filteredUsers =
+          userMode === "roommate"
+            ? data.filter(
+                (u) =>
+                  u.lookingForRoommate &&
+                  (q ? locationMatchesQuery(getUserLocation(u), q) : true)
+              )
+            : data;
         setUserResults(filteredUsers);
       } else {
         //searching posts
@@ -254,7 +233,7 @@ export default function Search() {
         url = `${API_BASE_URL}/posts/search?category=${category}&q=${encodeURIComponent(
           q
         )}&limit=24`;
-        const token = localStorage.getItem("token");
+        const token = localStorage.getItem(AUTH_TOKEN_KEY);
         const res = await fetch(url, {
           credentials: "include", // send session cookie
           headers: token ? { Authorization: `Bearer ${token}` } : undefined,
@@ -393,6 +372,7 @@ export default function Search() {
           >
             <option value="interests">By interests</option>
             <option value="name">By name</option>
+            <option value="roommate">Looking for roommate</option>
           </select>
         )}
 
@@ -403,6 +383,8 @@ export default function Search() {
             target === "users"
               ? userMode === "name"
                 ? "Search by name…"
+                : userMode === "roommate"
+                ? "Search city, state, or country for roommates…"
                 : "Search interests (e.g., concerts, hiking)…"
               : "Optional keywords…"
           }

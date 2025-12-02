@@ -33,9 +33,14 @@ public class UserController {
         String trimmed = query.trim();
         int cappedLimit = Math.min(Math.max(limit, 1), 50);
 
-        List<User> users = "name".equalsIgnoreCase(mode)
-                ? userSearchService.searchByName(trimmed, cappedLimit)
-                : userSearchService.searchByInterest(trimmed, cappedLimit);
+        List<User> users;
+        if ("name".equalsIgnoreCase(mode)) {
+            users = userSearchService.searchByName(trimmed, cappedLimit);
+        } else if ("roommate".equalsIgnoreCase(mode)) {
+            users = userSearchService.searchRoommatesByLocation(trimmed, cappedLimit);
+        } else {
+            users = userSearchService.searchByInterest(trimmed, cappedLimit);
+        }
         return ResponseEntity.ok(users);
     }
 }

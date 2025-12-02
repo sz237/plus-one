@@ -121,11 +121,23 @@ public class EmailService {
     }
 
     private String buildPlainBody(User attendee, User organizer, Post post, ZonedDateTime start, Duration duration) {
+        boolean attendeeIsOrganizer = organizer != null
+                && attendee != null
+                && organizer.getId() != null
+                && organizer.getId().equals(attendee.getId());
+
         String organizerName = (organizer != null)
                 ? (organizer.getFirstName() + " " + organizer.getLastName()).trim()
                 : "Event organizer";
-        return "Hi " + attendee.getFirstName() + ",\n\n"
-                + "You RSVP'd to \"" + post.getTitle() + "\".\n"
+        String recipientName = attendee != null
+                ? attendee.getFirstName()
+                : "there";
+        String intro = attendeeIsOrganizer
+                ? "You created \"" + post.getTitle() + "\"."
+                : "You RSVP'd to \"" + post.getTitle() + "\".";
+
+        return "Hi " + recipientName + ",\n\n"
+                + intro + "\n"
                 + "When: " + start.truncatedTo(ChronoUnit.MINUTES).format(HUMAN_TIME) + " (" + duration.toHours() + " hour)\n\n"
                 + "Details: " + post.getDescription() + "\n\n"
                 + "Organizer: " + organizerName + "\n\n"

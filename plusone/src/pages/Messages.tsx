@@ -269,6 +269,11 @@ export default function Messages() {
     }).format(date);
   };
 
+  // Keep errors in state for logging/metrics, but do not surface to users.
+  const conversationsError = null;
+  const threadErrorCopy = null;
+  const pickerErrorCopy = null;
+
   return (
     <PageTemplate title="Messages">
       <div className="messages-layout">
@@ -298,9 +303,9 @@ export default function Messages() {
             {usersLoading && (
               <p className="text-center small mt-2 mb-0">Loading people…</p>
             )}
-            {pickerError && (
+            {pickerErrorCopy && (
               <div className="alert alert-danger small mb-0 mt-2">
-                {pickerError}
+                {pickerErrorCopy}
               </div>
             )}
           </header>
@@ -369,8 +374,8 @@ export default function Messages() {
                 </small>
               </header>
               <div className="message-scroll">
-                {threadError && (
-                  <div className="alert alert-danger">{threadError}</div>
+                {threadErrorCopy && (
+                  <div className="alert alert-danger">{threadErrorCopy}</div>
                 )}
                 {threadLoading && (
                   <p className="text-center text-muted">Loading…</p>
@@ -406,7 +411,9 @@ export default function Messages() {
           )}
         </section>
       </div>
-      {error && <div className="alert alert-danger mt-3">{error}</div>}
+      {conversationsError && (
+        <div className="alert alert-danger mt-3">{conversationsError}</div>
+      )}
     </PageTemplate>
   );
 }

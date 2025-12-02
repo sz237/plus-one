@@ -1,12 +1,5 @@
 package com.plusone.PlusOneBackend.service;
 
-import com.plusone.PlusOneBackend.model.Post;
-import com.plusone.PlusOneBackend.model.User;
-import com.plusone.PlusOneBackend.repository.PostRepository;
-import com.plusone.PlusOneBackend.repository.UserRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -17,6 +10,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import com.plusone.PlusOneBackend.model.Post;
+import com.plusone.PlusOneBackend.model.User;
+import com.plusone.PlusOneBackend.repository.PostRepository;
+import com.plusone.PlusOneBackend.repository.UserRepository;
 
 @Service
 public class PostService {
@@ -170,10 +171,19 @@ public class PostService {
         ZonedDateTime startZdt = date.atTime(time).atZone(ZONE_CHICAGO);
         Duration duration = Duration.ofHours(1);
 
-        userRepository.findById(post.getUserId()).ifPresent(organizer -> {
-            if (attendee.getEmail() != null && organizer.getEmail() != null) {
-                emailService.sendEventInvite(attendee, organizer, post, startZdt, duration);
-            }
-        });
+        User organizer = userRepository.findById(post.getUserId()).orElse(null);
+        boolean attendeeIsOrganizer = organizer != null
+                && organizer.getId() != null
+                && organizer.getId().equals(attendee.getId());
+
+        // Always invite the attendee if we have their email, even if organizer record is missing.
+        if (attendee.getEmail() != null) {
+            emailService.sendEventInvite(attendee, organizer, post, startZdt, duration);
+        }
+
+        // Also invite the author so they have the event on their calendar (avoid duplicate if same person).
+        if (!attendeeIsOrganizer && organizer != null && organizer.getEmail() != null) {
+            emailService.sendEventInvite(organizer, organizer, post, startZdt, duration);
+        }
     }
 }
