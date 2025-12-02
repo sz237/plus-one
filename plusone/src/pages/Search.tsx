@@ -18,6 +18,7 @@ type User = {
   numConnections?: number;
   profilePhotoUrl?: string;
   location?: { city?: string; state?: string; country?: string };
+  profile?: { location?: { city?: string; state?: string; country?: string } };
   lookingForRoommate?: boolean | null;
 };
 
@@ -141,6 +142,9 @@ export default function Search() {
     return timeStr ? `${dateStr} at ${timeStr}` : dateStr;
   };
 
+  const getUserLocation = (u: User) =>
+    u.location || u.profile?.location || undefined;
+
   const locationMatchesQuery = (location: User["location"], q: string) => {
     if (!location) return false;
     const queryLower = q.toLowerCase();
@@ -219,7 +223,7 @@ export default function Search() {
             ? data.filter(
                 (u) =>
                   u.lookingForRoommate &&
-                  (q ? locationMatchesQuery(u.location, q) : true)
+                  (q ? locationMatchesQuery(getUserLocation(u), q) : true)
               )
             : data;
         setUserResults(filteredUsers);
