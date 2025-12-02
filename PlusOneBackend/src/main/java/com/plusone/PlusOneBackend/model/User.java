@@ -7,6 +7,8 @@ import java.util.ArrayList;
 
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
+import org.springframework.data.mongodb.core.index.CompoundIndex;
+import org.springframework.data.mongodb.core.index.CompoundIndexes;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -22,6 +24,11 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Builder
 @Document(collection = "users")
+@CompoundIndexes({
+    @CompoundIndex(name = "onboarding_completed_created_idx", def = "{ 'onboarding.completed': 1, 'createdAt': -1 }"),
+    @CompoundIndex(name = "location_city_idx", def = "{ 'profile.location.city': 1 }"),
+    @CompoundIndex(name = "location_state_idx", def = "{ 'profile.location.state': 1 }")
+})
 public class User {
 
     @Id
