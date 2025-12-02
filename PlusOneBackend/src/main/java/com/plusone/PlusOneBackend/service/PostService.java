@@ -1,12 +1,5 @@
 package com.plusone.PlusOneBackend.service;
 
-import com.plusone.PlusOneBackend.model.Post;
-import com.plusone.PlusOneBackend.model.User;
-import com.plusone.PlusOneBackend.repository.PostRepository;
-import com.plusone.PlusOneBackend.repository.UserRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -17,6 +10,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import com.plusone.PlusOneBackend.model.Post;
+import com.plusone.PlusOneBackend.model.User;
+import com.plusone.PlusOneBackend.repository.PostRepository;
+import com.plusone.PlusOneBackend.repository.UserRepository;
 
 @Service
 public class PostService {
@@ -41,7 +42,8 @@ public class PostService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found: " + userId));
 
-        Post post = postRepository.findById(postId)
+        // Optional: ensure post exists
+        postRepository.findById(postId)
                 .orElseThrow(() -> new RuntimeException("Post not found: " + postId));
 
         List<String> bookmarks = user.getBookmarkedPostIds();
@@ -55,11 +57,6 @@ public class PostService {
         }
 
         userRepository.save(user);
-
-        // Treat bookmarking an event as an RSVP (adds to guest list + calendar invites).
-        if (isEventsCategory(post)) {
-            rsvpToEvent(userId, postId);
-        }
     }
 
     public void unbookmarkPost(String userId, String postId) {
@@ -69,13 +66,6 @@ public class PostService {
         List<String> bookmarks = user.getBookmarkedPostIds();
         if (bookmarks != null && bookmarks.remove(postId)) {
             userRepository.save(user);
-
-            // If this was an event, also cancel the RSVP so the guest list stays in sync.
-            postRepository.findById(postId).ifPresent(post -> {
-                if (isEventsCategory(post)) {
-                    cancelRsvp(userId, postId);
-                }
-            });
         }
     }
 
