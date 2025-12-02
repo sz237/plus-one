@@ -31,6 +31,8 @@ Upon graduating and moving to an unfamiliar city, it is hard to find people with
 2) Use a current Node version, then install and start:
    ```bash
    cd plusone
+   nvm use 20
+   rm -rf node_modules
    npm install
    npm run dev
    ```
