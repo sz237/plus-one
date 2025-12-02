@@ -1,13 +1,9 @@
 package com.plusone.PlusOneBackend.service;
 
-import static java.util.Comparator.comparing;
-
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -52,9 +48,7 @@ public class MessageService {
 
         Optional<Conversation> existing = conversationRepository.findDirectConversation(key, key.size());
         if (existing.isPresent()) {
-            Conversation convo = existing.get();
-            ensureMessageList(convo);
-            return convo;
+            return existing.get();
         }
 
         Conversation convo = Conversation.builder()
@@ -69,8 +63,7 @@ public class MessageService {
     }
 
     public List<ConversationResponse> listConversations(String currentUserId) {
-        return conversationRepository.findByParticipantIdsContaining(currentUserId).stream()
-                .sorted(comparing(Conversation::getLastMessageAt).reversed())
+        return conversationRepository.findByParticipantIdsContainingOrderByLastMessageAtDesc(currentUserId).stream()
                 .map(convo -> toConversationResponse(convo, currentUserId))
                 .toList();
     }
@@ -113,7 +106,6 @@ public class MessageService {
 
         messageRepository.save(message);
 
-        ensureMessageList(convo).add(message.getId());
         updateConversationMetadata(convo, message);
         conversationRepository.save(convo);
 
@@ -155,34 +147,8 @@ public class MessageService {
         }
     }
 
-    private List<String> ensureMessageList(Conversation convo) {
-        if (convo.getMessageIds() == null) {
-            convo.setMessageIds(new ArrayList<>());
-        }
-        return convo.getMessageIds();
-    }
-
     private List<Message> fetchMessagesInOrder(Conversation convo) {
-        List<String> ids = ensureMessageList(convo);
-        if (!ids.isEmpty()) {
-            Map<String, Message> byId = messageRepository.findAllById(ids).stream()
-                    .collect(Collectors.toMap(Message::getId, m -> m, (a, b) -> a));
-            List<Message> ordered = new ArrayList<>();
-            for (String id : ids) {
-                Message msg = byId.get(id);
-                if (msg != null) {
-                    ordered.add(msg);
-                }
-            }
-            return ordered;
-        }
-
-        List<Message> messages = messageRepository.findByConversationIdOrderBySentAtAsc(convo.getId());
-        if (!messages.isEmpty()) {
-            convo.setMessageIds(messages.stream().map(Message::getId).toList());
-            conversationRepository.save(convo);
-        }
-        return messages;
+        return messageRepository.findByConversationIdOrderBySentAtAsc(convo.getId());
     }
 
     private ConversationResponse toConversationResponse(Conversation convo, String currentUserId) {

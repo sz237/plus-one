@@ -11,7 +11,7 @@ import com.plusone.PlusOneBackend.model.Conversation;
 
 public interface ConversationRepository extends MongoRepository<Conversation, String> {
 
-    List<Conversation> findByParticipantIdsContaining(String userId);
+    List<Conversation> findByParticipantIdsContainingOrderByLastMessageAtDesc(String userId);
 
     @Query("{ $and: [ { 'participantIds': { $all: ?0 } }, { 'participantIds': { $size: ?1 } } ] }")
     Optional<Conversation> findDirectConversation(List<String> participants, int size);

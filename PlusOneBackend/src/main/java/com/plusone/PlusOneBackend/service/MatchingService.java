@@ -7,6 +7,8 @@ import com.plusone.PlusOneBackend.model.User;
 import com.plusone.PlusOneBackend.repository.ConnectionRepository;
 import com.plusone.PlusOneBackend.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.format.DateTimeFormatter;
@@ -21,6 +23,7 @@ public class MatchingService {
     
     private static final double LOCATION_EXACT_MATCH = 1.0;
     private static final double LOCATION_STATE_MATCH = 0.4;
+    private static final int MAX_CANDIDATES = 500;
     
     @Autowired
     private UserRepository userRepository;
@@ -157,12 +160,9 @@ public class MatchingService {
             return Collections.emptyList();
         }
         User currentUser = currentUserOpt.get();
-        
-        // Get all users except current user
-        List<User> allUsers = userRepository.findAll().stream()
-            .filter(user -> !user.getId().equals(currentUserId))
-            .collect(Collectors.toList());
-        
+
+        List<User> allUsers = loadCandidateUsers(currentUserId, limit);
+
         // Calculate scores and filter
         // Note: We include ALL users regardless of match score (even 0.0), sorted by score
         // This includes connected users (friends) and users with pending requests
@@ -206,10 +206,7 @@ public class MatchingService {
         }
         User currentUser = currentUserOpt.get();
         
-        // Get all users except current user
-        List<User> allUsers = userRepository.findAll().stream()
-            .filter(user -> !user.getId().equals(currentUserId))
-            .collect(Collectors.toList());
+        List<User> allUsers = loadCandidateUsers(currentUserId, limit);
         
         // Get existing connections for current user (to exclude friends)
         Set<String> connectedUserIds = getConnectedUserIds(currentUserId);
@@ -248,6 +245,12 @@ public class MatchingService {
             .collect(Collectors.toSet());
     }
 
+    private List<User> loadCandidateUsers(String currentUserId, int limit) {
+        int capped = Math.max(1, Math.min(limit, MAX_CANDIDATES));
+        Pageable page = PageRequest.of(0, capped);
+        return userRepository.findCompletedOnboardingExcluding(currentUserId, page);
+    }
+
     /**
      * Convert User to UserProfileDto.
      */
@@ -283,4 +286,3 @@ public class MatchingService {
         }
     }
 }
-

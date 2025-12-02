@@ -1,10 +1,5 @@
 package com.plusone.PlusOneBackend.service;
 
-import java.time.Duration;
-import java.time.LocalDate;
-import java.time.LocalTime;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -22,20 +17,16 @@ import com.plusone.PlusOneBackend.repository.UserRepository;
 @Service
 public class PostService {
 
-    private static final ZoneId ZONE_CHICAGO = ZoneId.of("America/Chicago");
     private static final String CATEGORY_EVENTS = "Events";
 
     private final UserRepository userRepository;
     private final PostRepository postRepository;
-    private final EmailService emailService;
 
     @Autowired
     public PostService(UserRepository userRepository,
-                       PostRepository postRepository,
-                       EmailService emailService) {
+                       PostRepository postRepository) {
         this.userRepository = userRepository;
         this.postRepository = postRepository;
-        this.emailService = emailService;
     }
 
     public void bookmarkPost(String userId, String postId) {
@@ -93,7 +84,6 @@ public class PostService {
             rsvps.add(user.getId());
             post.setRsvpUserIds(rsvps);
             postRepository.save(post);
-            sendCalendarInviteIfPossible(user, post);
         }
 
         return post;
@@ -159,31 +149,5 @@ public class PostService {
     private User requireUser(String userId) {
         return userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found: " + userId));
-    }
-
-    private void sendCalendarInviteIfPossible(User attendee, Post post) {
-        if (post.getEventDate() == null || post.getEventTime() == null) {
-            return; // need both date and time to build a real invite
-        }
-
-        LocalDate date = post.getEventDate();
-        LocalTime time = post.getEventTime();
-        ZonedDateTime startZdt = date.atTime(time).atZone(ZONE_CHICAGO);
-        Duration duration = Duration.ofHours(1);
-
-        User organizer = userRepository.findById(post.getUserId()).orElse(null);
-        boolean attendeeIsOrganizer = organizer != null
-                && organizer.getId() != null
-                && organizer.getId().equals(attendee.getId());
-
-        // Always invite the attendee if we have their email, even if organizer record is missing.
-        if (attendee.getEmail() != null) {
-            emailService.sendEventInvite(attendee, organizer, post, startZdt, duration);
-        }
-
-        // Also invite the author so they have the event on their calendar (avoid duplicate if same person).
-        if (!attendeeIsOrganizer && organizer != null && organizer.getEmail() != null) {
-            emailService.sendEventInvite(organizer, organizer, post, startZdt, duration);
-        }
     }
 }

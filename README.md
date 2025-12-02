@@ -1,84 +1,65 @@
-# CS4278-Group11
-Vanderbilt CS 4278 Team 11 Software Engineering Project
+# CS4278-Group11 (Plus One)
+Upon graduating and moving to an unfamiliar city, it is hard to find people with commonalities. Plus One platformizes new Vanderbilt graduates so alumni can reach out to one another, find roommates, share opportunities, and discover events. Graduates complete onboarding, then use discovery, search, and filtering to connect with peers.
 
-## Project Summary
-It is a commonly referenced struggle that, upon graduating and moving to an unfamiliar city, it is hard to find people with commonalities to connect with. Plus One aims to help alleviate that issue by platforming new Vanderbilt graduates in one accessible spot so that people with this common background can reach out to one another. Through this process, people can make friendships, find a roommate, share work and internship opportunities, and even find a friend to join for a day trip. 
+## Tech Stack
+- Frontend: React + TypeScript + Vite
+- Backend: Java 17 + Spring Boot
+- Database: MongoDB
 
-Plus One provides a variety of tools and user experiences to help Vanderbilt alumni connect with each other. In our app, graduates will complete a profile onboarding experience then be directed to a discovery page which they can access at any time to see activities and events in their area being posted. Our app incorporates search functionality and filtering mechanisms so that users can find other alumni with common interests. The scope of the project, ultimately, is to provide Vandy alumni with one central platform to casual connections beyond graduation. 
+## Start the backend (API)
+1) Open a terminal in the project root.  
+2) Run:
+   ```bash
+   cd PlusOneBackend
+   chmod +x mvnw   # one-time on macOS/Linux
+   ./mvnw spring-boot:run
+   ```
+3) The API will run at http://localhost:8080.
+4) If you see an error about missing `.mvn/wrapper` files, run this once inside `PlusOneBackend`, then start again:
+   ```bash
+   mvn -N io.takari:maven:wrapper
+   ./mvnw spring-boot:run
+   ```
 
-## Framework
-Front End: JavaScript + React 
-Backend: Spring Boot + Java 
-Database: Mongo DB
+## Start the frontend (web app)
+1) Open a second terminal in the project root.  
+2) Use a current Node version, then install and start:
+   ```bash
+   cd plusone
+   nvm use 20
+   rm -rf node_modules
+   npm install
+   npm run dev
+   ```
+3) The site will run at http://localhost:5173. Keep the backend running in the other terminal.
 
-## Backend Prereqs
-- **Java 17** (already assumed installed)
-- **No need to install Maven** — we use the Maven Wrapper (`./mvnw`)
+## Run tests (optional)
+- Backend tests:
+  ```bash
+  cd PlusOneBackend
+  ./mvnw test
+  ```
+- Frontend tests:
+  ```bash
+  cd plusone
+  npm test
+  ```
+  
+## Deployment (frontend and backend)
+- **Backend**
+  1) Follow steps to set up on Render using their guide, "Deploying on Render."
+  2) Add these environment variables in your Render (or other host) settings:
+     - `APP_CORS_ALLOWED_ORIGINS`
+     - `JWT_SECRET`
+     - `MAIL_FROM`
+     - `MAIL_HOST`
+     - `MAIL_PASSWORD`
+     - `MAIL_PORT`
+     - `MAIL_USERNAME`
+     - `SPRING_DATA_MONGODB_URI` (use your MongoDB connection string)
+  3) Turn on automatic deploys from GitHub (e.g., in Render: connect this repo, pick the main branch, and enable “Auto Deploy” so every push to GitHub redeploys the backend).
 
-## Run the backend
-
-```bash
-cd PlusOneBackend
-# First time build (downloads deps)
-./mvnw spring-boot:run
-```
-
-Spring Boot will start on http://localhost:8080. MongoDB defaults to `localhost:27017`. You can override in `src/main/resources/application.properties`:
-
-```properties
-spring.data.mongodb.uri=mongodb://localhost:27017/plusone
-spring.application.name=PlusOneBackend
-server.port=8080
-```
-
-Set up instructions:
-
-```bash
-git clone <REPO_URL>
-cd CS4278-Group11/PlusOneBackend
-./mvnw spring-boot:run
-```
-
-## Useful Maven commands
-
-```bash
-./mvnw clean test
-./mvnw spring-boot:run
-./mvnw clean package
-```
-
-## Frontend Prereqs
-- **Node.js**
-You can install the latest Long Term Support (LTS) version of Node.js:
-```bash
-nvm install --lts
-```
-
-Alternatively, to install a specific version:
-```bash
-nvm install <version_number> # e.g., nvm install 18
-```
-
-Check the installed Node.js and npm versions:
-```bash
-node -v
-npm -v
-```
-
-## Run the frontend
-First time:
-
-```bash
-cd plusone
-npm install
-npm run dev
-```
-npm install sets up the dependencies
-
-Running after setup: 
-```bash
-cd plusone
-npm run dev
-```
-
-This will give you a locally hosted front end. You need to run both front end and backend on separate terminals to access login features. 
+- **Frontend**
+  1) Follow step to set up deployment using Vercel and their guide to do deployments through github.
+  2) Deploy the `plusone/dist` folder to your host Vercel. Set `VITE_API_BASE_URL` to your deployed backend URL (for example `https://your-api.example.com/api`).
+  3) Turn on automatic deploys from GitHub (connect this repo, pick the main branch, and enable auto deploy so each push rebuilds and ships the frontend).

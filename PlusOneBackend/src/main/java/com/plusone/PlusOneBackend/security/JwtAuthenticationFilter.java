@@ -49,7 +49,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         String token = resolveToken(request);
         if (!StringUtils.hasText(token)) {
-            unauthorized(response, "Unauthorized - No token provided");
+            // Allow the request to continue for endpoints that are permitAll in security config.
+            filterChain.doFilter(request, response);
             return;
         }
 

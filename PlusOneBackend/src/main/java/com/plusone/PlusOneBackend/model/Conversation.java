@@ -6,6 +6,9 @@ import java.util.List;
 import java.util.Map;
 
 import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.CompoundIndex;
+import org.springframework.data.mongodb.core.index.CompoundIndexes;
+import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import lombok.AllArgsConstructor;
@@ -24,11 +27,15 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Builder
 @Document(collection = "conversations")
+@CompoundIndexes({
+    @CompoundIndex(name = "participants_last_idx", def = "{ 'participantIds': 1, 'lastMessageAt': -1 }")
+})
 public class Conversation {
 
     @Id 
     private String id;
 
+    @Indexed(name = "participant_ids_idx")
     @Builder.Default
     private List<String> participantIds = new ArrayList<>();
 
@@ -38,6 +45,7 @@ public class Conversation {
     @Builder.Default
     private Instant createdAt = Instant.now();
 
+    @Indexed(name = "last_message_at_idx")
     @Builder.Default
     private Instant lastMessageAt = Instant.now();
 
