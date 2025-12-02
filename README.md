@@ -6,11 +6,6 @@ Upon graduating and moving to an unfamiliar city, it is hard to find people with
 - Backend: Java 17 + Spring Boot
 - Database: MongoDB
 
-## What you need
-- Java 17
-- Node.js (latest LTS) and npm
-- MongoDB running locally
-
 ## Start the backend (API)
 1) Open a terminal in the project root.  
 2) Run:
