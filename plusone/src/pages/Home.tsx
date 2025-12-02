@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
 import UserProfileCard from "../components/UserProfileCard";
 import ConnectPopup from "../components/ConnectPopup";
@@ -42,7 +42,6 @@ interface EventPost extends Post {
 }
 
 function Home() {
-  const location = useLocation();
   const navigate = useNavigate();
   const [navOpen, setNavOpen] = useState(false);
   const [suggestedUsers, setSuggestedUsers] = useState<UserProfile[]>([]);
@@ -77,47 +76,17 @@ function Home() {
     }
   }, [user?.userId]);
 
-  // Refresh when navigating to this page (detect route changes)
-  const prevPathRef = useRef<string>('');
+  // Listen for connection change flag via storage events to avoid constant refresh loops
   useEffect(() => {
-    if (location.pathname === '/home' && user?.userId) {
-      // Check if we just navigated to this page (pathname changed to /home)
-      const justNavigated = prevPathRef.current !== '/home' && location.pathname === '/home';
-      if (prevPathRef.current) { // Only update after first render
-        prevPathRef.current = location.pathname;
-      } else {
-        prevPathRef.current = location.pathname;
-      }
-      
-      // Check if connections changed
-      const connectionChanged = localStorage.getItem('connectionChanged');
-      if (connectionChanged === 'true') {
-        localStorage.removeItem('connectionChanged');
-        loadUsers();
-        loadEventPosts();
-      } else if (justNavigated) {
-        // Also reload when just navigated here to ensure fresh data
-        loadUsers();
-        loadEventPosts();
-      }
-    }
-  }, [location.pathname, user?.userId]);
-
-  // Also check when window gains focus
-  useEffect(() => {
-    const handleFocus = () => {
-      const connectionChanged = localStorage.getItem('connectionChanged');
-      if (connectionChanged === 'true' && user?.userId) {
+    const handleStorage = () => {
+      if (localStorage.getItem('connectionChanged') === 'true' && user?.userId) {
         localStorage.removeItem('connectionChanged');
         loadUsers();
         loadEventPosts();
       }
     };
-
-    window.addEventListener('focus', handleFocus);
-    return () => {
-      window.removeEventListener('focus', handleFocus);
-    };
+    window.addEventListener('storage', handleStorage);
+    return () => window.removeEventListener('storage', handleStorage);
   }, [user?.userId]);
 
   const loadEventPosts = async () => {
