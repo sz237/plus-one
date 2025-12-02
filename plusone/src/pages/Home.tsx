@@ -1,10 +1,12 @@
 import { useState, useEffect, useRef } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
 import UserProfileCard from "../components/UserProfileCard";
+import ConnectPopup from "../components/ConnectPopup";
 import { connectionService } from "../services/connectionService";
 import { postService } from "../services/postService";
 import type { Post } from "../types/post";
+import type { ProfileResponse } from "../types/profile";
 
 interface UserProfile {
   userId: string;
@@ -41,6 +43,7 @@ interface EventPost extends Post {
 
 function Home() {
   const location = useLocation();
+  const navigate = useNavigate();
   const [navOpen, setNavOpen] = useState(false);
   const [suggestedUsers, setSuggestedUsers] = useState<UserProfile[]>([]);
   const [friends, setFriends] = useState<UserProfile[]>([]);
@@ -51,6 +54,12 @@ function Home() {
   const [eventPosts, setEventPosts] = useState<EventPost[]>([]);
   const [eventsLoading, setEventsLoading] = useState(false);
   const [eventsError, setEventsError] = useState('');
+  const [selectedProfile, setSelectedProfile] = useState<ProfileResponse | null>(null);
+  const [profileLoading, setProfileLoading] = useState(false);
+  const [profileError, setProfileError] = useState("");
+  const [showConnectPopup, setShowConnectPopup] = useState(false);
+  const [selectedAuthorId, setSelectedAuthorId] = useState<string | null>(null);
+  const [authorConnectionStatus, setAuthorConnectionStatus] = useState<Record<string, string>>({});
 
   const user = (() => {
     try {
@@ -227,6 +236,50 @@ function Home() {
     loadEventPosts();
   };
 
+  const openAuthorProfile = async (authorId?: string) => {
+    if (!authorId || !user?.userId) return;
+    
+    try {
+      setProfileLoading(true);
+      setProfileError("");
+      const profile = await postService.getProfile(authorId);
+      setSelectedProfile(profile);
+      
+      // Also load connection status for this author (use profile.userId once loaded)
+      const profileUserId = profile.userId || authorId;
+      try {
+        const status = await connectionService.getConnectionStatus(user.userId, profileUserId);
+        setAuthorConnectionStatus(prev => ({ ...prev, [profileUserId]: status }));
+      } catch (err) {
+        console.error('Failed to load connection status:', err);
+        setAuthorConnectionStatus(prev => ({ ...prev, [profileUserId]: 'CONNECT' }));
+      }
+    } catch (err) {
+      console.error(err);
+      setProfileError("Failed to load profile.");
+      setSelectedProfile(null);
+    } finally {
+      setProfileLoading(false);
+    }
+  };
+
+  const closeProfileModal = () => {
+    setSelectedProfile(null);
+    setProfileError("");
+    setShowConnectPopup(false);
+    setSelectedAuthorId(null);
+  };
+
+  const handleConnectClick = (authorId: string) => {
+    setSelectedAuthorId(authorId);
+    setShowConnectPopup(true);
+  };
+
+  const handleMessageClick = () => {
+    closeProfileModal();
+    navigate('/messages');
+  };
+
   const formatEventDateTime = (date?: string | null, time?: string | null) => {
     if (!date) return "";
     const dateStr = new Date(date).toLocaleDateString();
@@ -361,7 +414,19 @@ function Home() {
                             <h4 className="mb-2 fw-bold">{post.title}</h4>
                             <div className="small text-muted mb-2">
                               <div>
-                                Posted by <strong>{authorName}</strong>
+                                Posted by{" "}
+                                {post.author?.id ? (
+                                  <button
+                                    type="button"
+                                    className="btn btn-link p-0 align-baseline text-decoration-underline"
+                                    onClick={() => openAuthorProfile(post.author?.id)}
+                                    style={{ fontWeight: 700, color: "inherit" }}
+                                  >
+                                    <strong>{authorName}</strong>
+                                  </button>
+                                ) : (
+                                  <strong>{authorName}</strong>
+                                )}
                               </div>
                               {post.createdAt && (
                                 <div>{formatTimeAgo(post.createdAt)}</div>
@@ -495,6 +560,161 @@ function Home() {
         )}
 
       </main>
+
+      {/* Profile Modal */}
+      {(selectedProfile || profileLoading || profileError) && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="d-flex align-items-center justify-content-center"
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.45)",
+            zIndex: 1050,
+            padding: "16px",
+          }}
+        >
+          <div
+            className="bg-white border border-2"
+            style={{ borderColor: "#000", maxWidth: 500, width: "100%", borderRadius: 8 }}
+          >
+            <div className="d-flex justify-content-between align-items-center px-3 py-2 border-bottom">
+              <div className="fw-bold">User Profile</div>
+              <button
+                type="button"
+                className="btn btn-sm btn-outline-dark"
+                onClick={closeProfileModal}
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="p-3" style={{ maxHeight: "60vh", overflowY: "auto" }}>
+              {profileLoading ? (
+                <div className="text-muted">Loading…</div>
+              ) : profileError ? (
+                <div className="alert alert-danger mb-0">{profileError}</div>
+              ) : selectedProfile ? (
+                <div className="vstack gap-2">
+                  <div className="fw-bold">
+                    {selectedProfile.firstName} {selectedProfile.lastName}
+                  </div>
+                  {selectedProfile.profile?.profilePhoto?.url && (
+                    <div className="text-center">
+                      <img
+                        src={selectedProfile.profile.profilePhoto.url}
+                        alt={`${selectedProfile.firstName} ${selectedProfile.lastName}`}
+                        style={{
+                          width: 100,
+                          height: 100,
+                          borderRadius: "50%",
+                          border: "2px solid #000",
+                          objectFit: "cover",
+                        }}
+                      />
+                    </div>
+                  )}
+                  {selectedProfile.profile?.job?.title && (
+                    <div>
+                      <strong>Title:</strong> {selectedProfile.profile.job.title}
+                      {selectedProfile.profile.job.companiesName
+                        ? ` @ ${selectedProfile.profile.job.companiesName}`
+                        : ""}
+                    </div>
+                  )}
+                  {selectedProfile.profile?.location && (
+                    <div>
+                      <strong>Location:</strong>{" "}
+                      {[
+                        selectedProfile.profile.location.city,
+                        selectedProfile.profile.location.state,
+                        selectedProfile.profile.location.country,
+                      ]
+                        .filter(Boolean)
+                        .join(", ")}
+                    </div>
+                  )}
+                  {selectedProfile.profile?.interests?.length ? (
+                    <div>
+                      <strong>Interests:</strong>
+                      <div className="d-flex flex-wrap gap-2 mt-2">
+                        {selectedProfile.profile.interests.map((i) => (
+                          <span
+                            key={i}
+                            className="badge text-bg-light"
+                            style={{ border: "1px solid #000", fontWeight: 500 }}
+                          >
+                            {i}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  ) : null}
+                  <div className="small text-muted">
+                    Connections: {selectedProfile.connectionsCount} • Posts: {selectedProfile.postsCount}
+                  </div>
+                  
+                  {/* Connect and Message buttons - only show if not self */}
+                  {selectedProfile.userId && user?.userId && selectedProfile.userId !== user.userId && (
+                    <div className="mt-3 pt-2 border-top">
+                      <div className="d-flex gap-2">
+                        {authorConnectionStatus[selectedProfile.userId] === "FRIENDS" ? (
+                          <>
+                            <button className="btn btn-success btn-sm" disabled>
+                              Already Connected
+                            </button>
+                            <button
+                              className="btn btn-outline-dark btn-sm"
+                              onClick={handleMessageClick}
+                            >
+                              Message
+                            </button>
+                          </>
+                        ) : authorConnectionStatus[selectedProfile.userId] === "PENDING" ? (
+                          <button className="btn btn-warning btn-sm text-dark" disabled>
+                            Request Pending
+                          </button>
+                        ) : (
+                          <button
+                            className="btn btn-outline-dark btn-sm"
+                            onClick={() => handleConnectClick(selectedProfile.userId)}
+                          >
+                            Connect
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : null}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Connect Popup */}
+      {selectedAuthorId && user?.userId && (
+        <ConnectPopup
+          isOpen={showConnectPopup}
+          onClose={() => {
+            setShowConnectPopup(false);
+            setSelectedAuthorId(null);
+          }}
+          targetUser={{
+            userId: selectedAuthorId,
+            firstName: selectedProfile?.firstName || "",
+            lastName: selectedProfile?.lastName || "",
+          }}
+          currentUserId={user.userId}
+          onSuccess={() => {
+            if (selectedAuthorId) {
+              setAuthorConnectionStatus(prev => ({ ...prev, [selectedAuthorId]: 'PENDING' }));
+              handleConnectionUpdate();
+            }
+          }}
+        />
+      )}
     </div>
   );
 }
